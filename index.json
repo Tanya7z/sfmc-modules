@@ -1,12 +1,51 @@
 {
   "_comment": "first-party registry index — fetched by tools/fetch-module.mjs。schema: modules.<packageFolder> → { repo, tag }。id 与 packages/<folder> 同名(afk 而非 feature-afk)。",
   "version": 1,
-  "generatedAt": "2026-07-22T05:20:00Z",
+  "generatedAt": "2026-07-22T05:37:15.099Z",
   "modules": {
-    "afk": { "repo": "Tanya7z/sfmc-modules", "tag": "modules-v0.1.0" },
-    "spawn-protect": { "repo": "Tanya7z/sfmc-modules", "tag": "modules-v0.1.0" },
-    "chat-sounds": { "repo": "Tanya7z/sfmc-modules", "tag": "modules-v0.1.0" },
-    "qa": { "repo": "Tanya7z/sfmc-modules", "tag": "modules-v0.1.0" },
-    "tps": { "repo": "Tanya7z/sfmc-modules", "tag": "modules-v0.1.0" }
+    "afk": {
+      "repo": "Tanya7z/sfmc-modules",
+      "tag": "modules-v0.2.0"
+    },
+    "spawn-protect": {
+      "repo": "Tanya7z/sfmc-modules",
+      "tag": "modules-v0.2.0"
+    },
+    "chat-sounds": {
+      "repo": "Tanya7z/sfmc-modules",
+      "tag": "modules-v0.2.0"
+    },
+    "qa": {
+      "repo": "Tanya7z/sfmc-modules",
+      "tag": "modules-v0.2.0"
+    },
+    "tps": {
+      "repo": "Tanya7z/sfmc-modules",
+      "tag": "modules-v0.2.0"
+    },
+    "online-time": {
+      "repo": "Tanya7z/sfmc-modules",
+      "tag": "modules-v0.2.0"
+    },
+    "activity-log": {
+      "repo": "Tanya7z/sfmc-modules",
+      "tag": "modules-v0.2.0"
+    },
+    "scoreboard-sync": {
+      "repo": "Tanya7z/sfmc-modules",
+      "tag": "modules-v0.2.0"
+    },
+    "inventory-switcher": {
+      "repo": "Tanya7z/sfmc-modules",
+      "tag": "modules-v0.2.0"
+    },
+    "feature-area": {
+      "repo": "Tanya7z/sfmc-modules",
+      "tag": "modules-v0.2.0"
+    },
+    "monitor": {
+      "repo": "Tanya7z/sfmc-modules",
+      "tag": "modules-v0.2.0"
+    }
   }
 }
