@@ -1,25 +1,21 @@
-好的，我来将这份 `sfmc-modules` 的 README 翻译成中文。
-
----
-
 # sfmc-modules
 
-SFMC v2 协议模块。为 [ScriptsForMinecraftServer](https://github.com/Shiroha7z/ScriptsForMinecraftServer) 构建的第一方模块，基于 `@sfmc/sdk`。
+SFMC v2 protocol modules. First-party modules for [ScriptsForMinecraftServer](https://github.com/Shiroha7z/ScriptsForMinecraftServer), built on `@sfmc/sdk`.
 
-每个 `packages/<id>/` 下的模块包含：
+Each module under `packages/<id>/` ships:
 
-- `sapi/manifest.json` — v2 协议声明（`schemaVersion: 2`）
-- `sapi/src/index.ts` — SAPI 入口点（`ModuleRegistry.register({...})`）
-- `package.json` — 依赖 `@sfmc/sdk`
-- 可选 `configs-default/` — 初始 `configs/<configKey>.json` 默认配置
-- 可选 `resource_pack/` — 与行为包打包在一起的资源文件
+- `sapi/manifest.json` — v2 protocol declaration (`schemaVersion: 2`)
+- `sapi/src/index.ts` — SAPI entry point (`ModuleRegistry.register({...})`)
+- `package.json` — depends on `@sfmc/sdk`
+- Optional `configs-default/` — initial `configs/<configKey>.json` defaults
+- Optional `resource_pack/` — assets bundled with the BP
 
-## 目录结构
+## Layout
 
 ```
 sfmc-modules/
 ├── packages/
-│   ├── land/                       # 领地（v2 标准示例）
+│   ├── land/                       # 领地 (v2 standard example)
 │   ├── land-gui/                   # 领地 GUI 表单
 │   ├── economy/                    # 经济系统
 │   ├── chat/  chat-gui/            # 聊天
@@ -43,9 +39,9 @@ sfmc-modules/
 │   ├── data-backup/                # 数据备份
 │   ├── gui/                        # 主菜单 GUI
 │   └── ...
-├── index.json                      # 模块目录镜像
+├── index.json                      # module catalog mirror
 ├── tools/
-│   ├── check-modules.js            # 校验所有 manifest.json 是否合法
+│   ├── check-modules.js            # 校验所有 manifest.json 合法
 │   └── build.js                    # 批量 esbuild 到 ./build/
 ├── .github/workflows/ci.yml
 ├── README.md
@@ -53,9 +49,9 @@ sfmc-modules/
 └── LICENSE
 ```
 
-## 模块契约（v2）
+## Module contract (v2)
 
-每个模块必须包含 `sapi/manifest.json`：
+Each module MUST have a `sapi/manifest.json`:
 
 ```json
 {
@@ -84,9 +80,10 @@ sfmc-modules/
 }
 ```
 
-包含 `routes` / `tables` / `migrations` / `handlers` 的 v1 清单会在平台启动时被拒绝。
+`v1` manifest (with `routes` / `tables` / `migrations` / `handlers`) is rejected by
+the platform at startup.
 
-## 模块作者快速入门
+## Module author quickstart
 
 ```bash
 mkdir -p packages/my-module/sapi/src
@@ -144,10 +141,10 @@ ModuleRegistry.register({
 });
 ```
 
-## 开发工作流
+## Development workflow
 
 ```bash
-# 将所有模块拉取到本地行为包构建目录（主仓 scripts/ 下）
+# 拉全部模块到本地 BP 构建目录(主仓 scripts/ 下)
 cd ../ScriptsForMinecraftServer
 sfmc module install land --from github:Shiroha7z/sfmc-modules@latest
 sfmc module install land-gui --from github:Shiroha7z/sfmc-modules@latest
@@ -155,28 +152,31 @@ sfmc behavior-pack build
 sfmc behavior-pack deploy
 ```
 
-## 分发
+## Distribution
 
-发布时会生成每个模块的压缩包：
+Releases publish per-module tarballs:
 
 ```
 sfmc-module-<id>-<X.Y.Z>.zip
 sfmc-module-<id>-<X.Y.Z>.zip.sha256
 ```
 
-`tools/check-modules.js` 会校验所有 `packages/*/sapi/manifest.json` 是否符合 v2 规范，并且 `index.json` 目录镜像与磁盘上的实际模块保持一致。
+`tools/check-modules.js` validates that every `packages/*/sapi/manifest.json` is v2-compliant
+and the `index.json` catalog mirror matches the on-disk modules.
 
 ## CI
 
-GitHub Actions 运行：
+GitHub Actions runs:
 
-1. `tools/check-modules.js` — 检查 manifest v2 的合理性
-2. `tools/build.js` — 对每个模块的 `sapi/src/index.ts` 执行 esbuild，验证无编译错误
-3. 在 tag 推送时发布压缩包制品
+1. `tools/check-modules.js` — manifest v2 sanity
+2. `tools/build.js` — esbuild every module's `sapi/src/index.ts` to verify no compile errors
+3. Publish tarball artifacts on tag push
 
-## 从主仓库迁移
+## Migration from main repo
 
-[ScriptsForMinecraftServer](https://github.com/Shiroha7z/ScriptsForMinecraftServer) 中的 `modules/packages/<id>/` 目录通过 `git subtree push` 迁移到此仓库：
+The `modules/packages/<id>/` directories in
+[ScriptsForMinecraftServer](https://github.com/Shiroha7z/ScriptsForMinecraftServer)
+were migrated to this repo via `git subtree push`:
 
 ```bash
 cd ../ScriptsForMinecraftServer
@@ -184,12 +184,13 @@ git subtree push --prefix=modules/packages \
   git@github.com:Shiroha7z/sfmc-modules.git main
 ```
 
-推送后，模块在此仓库中位于 `packages/<id>/` 下。主仓库的 `modules/catalog.json` 会更新为从此仓库获取 `index.json`，例如：
+After push, modules live under `packages/<id>/` here. The main repo's
+`modules/catalog.json` is updated to fetch `index.json` from this repo via:
 
 ```bash
 sfmc module install <id> --from github:Shiroha7z/sfmc-modules@latest
 ```
 
-## 许可证
+## License
 
 ISC

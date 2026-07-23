@@ -5,13 +5,13 @@
  *  Author      :  Shiroha7z                *
 \* ---------------------------------------- */
 import { Player, system, world } from "@minecraft/server";
-import type { Channel, ChannelConfig, ChatMessage, MessageType, RedPacket } from "@sfmc/types";
 import { db } from "@sfmc/sdk/sapi/db";
 import { debug } from "@sfmc/sdk/sapi/runtime";
 import { Money } from "@sfmc/sdk/sapi/runtime";
 import { Permission } from "@sfmc/sdk/sapi/runtime";
 import { Msg, formatTimestamp, generateId } from "@sfmc/sdk/sapi/runtime";
 import * as ChatApi from "./chat-api.js";
+import type { Channel, ChannelConfig, ChatMessage, MessageType, RedPacket } from "./chat-api.js";
 
 export type { Channel, ChannelConfig, ChatMessage, MessageType, RedPacket };
 

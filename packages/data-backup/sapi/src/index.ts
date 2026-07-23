@@ -184,3 +184,4 @@ ModuleRegistry.register({
     },
   },
 });
+export type { PlayerData, WorldData } from "./types.js";

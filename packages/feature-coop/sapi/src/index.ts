@@ -165,3 +165,11 @@ ModuleRegistry.register({
     },
   },
 });
+
+export type {
+  CoopBankLog,
+  CoopData,
+  CoopMember,
+  CoopShopGroup,
+  CoopShopItem,
+} from "./coop-api.js";

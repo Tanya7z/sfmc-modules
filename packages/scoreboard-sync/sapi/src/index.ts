@@ -146,3 +146,8 @@ ModuleRegistry.register({
     },
   },
 });
+export type {
+  Participant,
+  ScoreboardEntry,
+  ScoreboardIdentityTypeNumber,
+} from "./types.js";

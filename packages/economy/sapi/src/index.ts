@@ -83,3 +83,9 @@ ModuleRegistry.register({
     },
   },
 });
+
+export type {
+  EconomyAccountRow,
+  EconomyIdempotencyRow,
+  EconomyTransactionRow,
+} from "./types.js";

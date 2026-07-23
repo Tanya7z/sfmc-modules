@@ -20,6 +20,15 @@
 
 import { db } from "@sfmc/sdk/sapi/db";
 
+/** 消息类型 */
+export type MessageType = "text" | "location" | "redpacket" | "teleport_invite" | "attachment";
+
+export interface ChannelConfig {
+  allowChat: boolean;
+  slowMode: number;
+  isBroadcast: boolean;
+}
+
 export interface Channel {
   id: string;
   name: string;
@@ -27,11 +36,7 @@ export interface Channel {
   prefix: string;
   ownerid?: string;
   createdAt: number;
-  config: {
-    allowChat: boolean;
-    slowMode: number;
-    isBroadcast: boolean;
-  };
+  config: ChannelConfig;
 }
 
 export interface ChatMessage {
@@ -39,10 +44,10 @@ export interface ChatMessage {
   fromid: string;
   fromName: string;
   channelId: string;
-  type: "text" | "location" | "teleport_invite" | "redpacket" | string;
+  type: MessageType | string;
   content: string;
   attachment?: string;
-  showTimestamp: boolean;
+  showTimestamp?: boolean;
   timestamp: number;
 }
 
@@ -59,6 +64,11 @@ export interface RedPacket {
   targetId: string;
   createdAt: number;
   expiresAt: number;
+}
+
+export interface PlayerChannelSettings {
+  id: string;
+  activeChannel: string;
 }
 
 interface ChannelRow {
