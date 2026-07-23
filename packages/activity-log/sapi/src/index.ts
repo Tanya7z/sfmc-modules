@@ -10,8 +10,27 @@
 
 import {
   Block,
+  BlockContainerClosedAfterEvent,
+  BlockContainerOpenedAfterEvent,
+  ChatSendAfterEvent,
   Entity,
+  EntityDieAfterEvent,
+  EntityHitEntityAfterEvent,
+  EntityHurtAfterEvent,
+  EntityItemDropAfterEvent,
+  EntityItemPickupAfterEvent,
+  EntitySpawnAfterEvent,
+  EntityTamedAfterEvent,
+  ExplosionAfterEvent,
+  ItemStack,
   Player,
+  PlayerBreakBlockAfterEvent,
+  PlayerDimensionChangeAfterEvent,
+  PlayerGameModeChangeAfterEvent,
+  PlayerInteractWithEntityAfterEvent,
+  PlayerLeaveAfterEvent,
+  PlayerPlaceBlockAfterEvent,
+  PlayerSpawnAfterEvent,
   system,
   Vector3,
   world,
@@ -71,11 +90,17 @@ interface Entry {
 
 let queue: Entry[] = [];
 let flushTimer: number | undefined;
-const subscriptions: Array<{ unsubscribe(): void }> = [];
+/** 事件退订 thunk（subscribe 返回回调本身，需用 signal.unsubscribe(cb)） */
+const eventCleanups: Array<() => void> = [];
 let flushIntervalId: number | undefined;
 let cleanupStartTimeoutId: number | undefined;
 let cleanupIntervalId: number | undefined;
 let initialized = false;
+
+type EventSignal<T> = {
+  subscribe: (cb: (arg: T) => void) => (arg: T) => void;
+  unsubscribe: (cb: (arg: T) => void) => void;
+};
 
 function dimId(entityOrBlock: Entity | Block): string {
   try {
@@ -241,28 +266,28 @@ async function doCleanup(): Promise<void> {
   }
 }
 
-function safeSubscribe(
-  signal: { subscribe?: (cb: (arg: unknown) => void) => unknown },
-  cb: (arg: any) => void,
-): void {
-  if (signal && typeof signal.subscribe === "function") {
-    const sub = signal.subscribe(cb) as { unsubscribe?: () => void };
-    if (sub && typeof sub.unsubscribe === "function") {
-      subscriptions.push(sub as { unsubscribe(): void });
+function safeSubscribe<T>(signal: EventSignal<T> | undefined, cb: (arg: T) => void): void {
+  if (!signal || typeof signal.subscribe !== "function") return;
+  const subscribed = signal.subscribe(cb);
+  eventCleanups.push(() => {
+    try {
+      signal.unsubscribe(subscribed);
+    } catch {
+      /* ignore */
     }
-  }
+  });
 }
 
 function subscribe(): void {
   const AE = world.afterEvents;
 
-  safeSubscribe(AE.playerSpawn, (event: any) => {
+  safeSubscribe(AE.playerSpawn, (event: PlayerSpawnAfterEvent) => {
     if (!event.initialSpawn) return;
     if (!ENABLED_EVENTS.has("player.join")) return;
     enqueue(playerEntry(event.player, "player.join"));
   });
 
-  safeSubscribe(AE.playerLeave, (event: any) => {
+  safeSubscribe(AE.playerLeave, (event: PlayerLeaveAfterEvent) => {
     if (!ENABLED_EVENTS.has("player.leave")) return;
     enqueue({
       ...genericEntry({
@@ -275,13 +300,13 @@ function subscribe(): void {
     });
   });
 
-  safeSubscribe(AE.playerSpawn, (event: any) => {
+  safeSubscribe(AE.playerSpawn, (event: PlayerSpawnAfterEvent) => {
     if (event.initialSpawn) return;
     if (!ENABLED_EVENTS.has("player.spawn")) return;
     enqueue(playerEntry(event.player, "player.spawn"));
   });
 
-  safeSubscribe(AE.playerDimensionChange, (event: any) => {
+  safeSubscribe(AE.playerDimensionChange, (event: PlayerDimensionChangeAfterEvent) => {
     if (!ENABLED_EVENTS.has("player.dimension")) return;
     const [fx, fy, fz] = loc(event.fromLocation);
     const [tx, ty, tz] = loc(event.toLocation);
@@ -300,7 +325,7 @@ function subscribe(): void {
     );
   });
 
-  safeSubscribe(AE.playerGameModeChange, (event: any) => {
+  safeSubscribe(AE.playerGameModeChange, (event: PlayerGameModeChangeAfterEvent) => {
     if (!ENABLED_EVENTS.has("player.gamemode")) return;
     enqueue(
       playerEntry(event.player, "player.gamemode", {
@@ -309,20 +334,20 @@ function subscribe(): void {
     );
   });
 
-  safeSubscribe(AE.chatSend, (event: any) => {
+  safeSubscribe(AE.chatSend, (event: ChatSendAfterEvent) => {
     if (!ENABLED_EVENTS.has("player.chat")) return;
-    const targets = event.targets?.map((p: any) => p.name) || [];
+    const targets = event.targets?.map((p: Player) => p.name) || [];
     enqueue(
       playerEntry(event.sender, "player.chat", {
         detail: {
           message: event.message,
-          targets: targets.length > 0 ? targets : undefined,
+          ...(targets.length > 0 ? { targets } : {}),
         },
       }),
     );
   });
 
-  safeSubscribe(AE.playerBreakBlock, (event: any) => {
+  safeSubscribe(AE.playerBreakBlock, (event: PlayerBreakBlockAfterEvent) => {
     if (!ENABLED_EVENTS.has("block.break")) return;
     const [bx, by, bz] = loc(event.block.location);
     enqueue(
@@ -340,7 +365,7 @@ function subscribe(): void {
     );
   });
 
-  safeSubscribe(AE.playerPlaceBlock, (event: any) => {
+  safeSubscribe(AE.playerPlaceBlock, (event: PlayerPlaceBlockAfterEvent) => {
     if (!ENABLED_EVENTS.has("block.place")) return;
     const [bx, by, bz] = loc(event.block.location);
     enqueue(
@@ -354,7 +379,7 @@ function subscribe(): void {
     );
   });
 
-  safeSubscribe(AE.entityDie, (event: any) => {
+  safeSubscribe(AE.entityDie, (event: EntityDieAfterEvent) => {
     if (!ENABLED_EVENTS.has("entity.death")) return;
     const dead = event.deadEntity;
     const [dx, dy, dz] = loc(dead.location);
@@ -404,7 +429,7 @@ function subscribe(): void {
     }
   });
 
-  safeSubscribe(AE.entityHitEntity, (event: any) => {
+  safeSubscribe(AE.entityHitEntity, (event: EntityHitEntityAfterEvent) => {
     if (!ENABLED_EVENTS.has("entity.hit")) return;
     const attacker = event.damagingEntity;
     const victim = event.hitEntity;
@@ -449,7 +474,7 @@ function subscribe(): void {
     }
   });
 
-  safeSubscribe(AE.entityHurt, (event: any) => {
+  safeSubscribe(AE.entityHurt, (event: EntityHurtAfterEvent) => {
     if (!ENABLED_EVENTS.has("entity.hurt")) return;
     const hurt = event.hurtEntity;
     const ds = event.damageSource;
@@ -467,7 +492,7 @@ function subscribe(): void {
     );
   });
 
-  safeSubscribe(AE.playerInteractWithEntity, (event: any) => {
+  safeSubscribe(AE.playerInteractWithEntity, (event: PlayerInteractWithEntityAfterEvent) => {
     if (!ENABLED_EVENTS.has("entity.interact")) return;
     const target = event.target;
     const [tx, ty, tz] = loc(target.location);
@@ -487,7 +512,7 @@ function subscribe(): void {
     );
   });
 
-  safeSubscribe(AE.entityTamed, (event: any) => {
+  safeSubscribe(AE.entityTamed, (event: EntityTamedAfterEvent) => {
     if (!ENABLED_EVENTS.has("entity.tame")) return;
     const tamer = event.tamingEntity;
     if (!tamer || tamer.typeId !== "minecraft:player") return;
@@ -504,7 +529,7 @@ function subscribe(): void {
     );
   });
 
-  safeSubscribe(AE.entitySpawn, (event: any) => {
+  safeSubscribe(AE.entitySpawn, (event: EntitySpawnAfterEvent) => {
     if (!ENABLED_EVENTS.has("entity.spawn")) return;
     const e = event.entity;
     if (e.typeId === "minecraft:player") return;
@@ -524,12 +549,12 @@ function subscribe(): void {
     );
   });
 
-  safeSubscribe(AE.entityItemDrop, (event: any) => {
+  safeSubscribe(AE.entityItemDrop, (event: EntityItemDropAfterEvent) => {
     if (!ENABLED_EVENTS.has("item.drop")) return;
     const e = event.entity;
     const [ex, ey, ez] = loc(e.location);
     const itemList = event.items
-      .map((item: any) => item.typeId)
+      .map((item: Entity) => item.typeId)
       .filter(Boolean);
     if (e.typeId === "minecraft:player") {
       enqueue(
@@ -552,20 +577,20 @@ function subscribe(): void {
     }
   });
 
-  safeSubscribe(AE.entityItemPickup, (event: any) => {
+  safeSubscribe(AE.entityItemPickup, (event: EntityItemPickupAfterEvent) => {
     if (!ENABLED_EVENTS.has("item.pickup")) return;
     const e = event.entity;
     if (e.typeId !== "minecraft:player") return;
     enqueue(
       playerEntry(e as Player, "item.pickup", {
         detail: {
-          items: event.items.map((item: any) => item.type.id),
+          items: event.items.map((item: ItemStack) => item.type.id),
         },
       }),
     );
   });
 
-  safeSubscribe(AE.blockContainerOpened, (event: any) => {
+  safeSubscribe(AE.blockContainerOpened, (event: BlockContainerOpenedAfterEvent) => {
     if (!ENABLED_EVENTS.has("container.open")) return;
     const source = event.openSource.entity;
     if (!source || source.typeId !== "minecraft:player") return;
@@ -581,7 +606,7 @@ function subscribe(): void {
     );
   });
 
-  safeSubscribe(AE.blockContainerClosed, (event: any) => {
+  safeSubscribe(AE.blockContainerClosed, (event: BlockContainerClosedAfterEvent) => {
     if (!ENABLED_EVENTS.has("container.close")) return;
     const source = event.closeSource.entity;
     if (!source || source.typeId !== "minecraft:player") return;
@@ -597,7 +622,7 @@ function subscribe(): void {
     );
   });
 
-  safeSubscribe(AE.explosion, (event: any) => {
+  safeSubscribe(AE.explosion, (event: ExplosionAfterEvent) => {
     if (!ENABLED_EVENTS.has("world.explosion")) return;
     const source = event.source;
     const dimension = event.dimension.id.replace("minecraft:", "");
@@ -657,14 +682,14 @@ ModuleRegistry.register({
       debug.i("DATA", "ActivityLog.init");
     },
     cleanup() {
-      for (const s of subscriptions) {
+      for (const cleanup of eventCleanups) {
         try {
-          s.unsubscribe();
+          cleanup();
         } catch {
           /* ignore */
         }
       }
-      subscriptions.length = 0;
+      eventCleanups.length = 0;
       if (flushTimer !== undefined) {
         try {
           system.clearRun(flushTimer);
