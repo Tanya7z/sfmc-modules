@@ -1,5 +1,5 @@
 /**
- * @sfmc/module-afk — v2 入口
+ * @sfmc-bds/module-afk — v2 入口
  *
  * 与 land v2 同型:ModuleRegistry.register + SDK config.drawer。
  * 零 db 表、零 cross-module service — 纯 SAPI 进程内的位置扫描 + 标签。
@@ -7,9 +7,9 @@
  */
 
 import { Player, system, world } from "@minecraft/server";
-import { Command, debug, Permission, Msg } from "@sfmc/sdk/sapi/runtime";
-import { config } from "@sfmc/sdk/sapi/config";
-import { ModuleRegistry } from "@sfmc/sdk/module-loader";
+import { Command, debug, Permission, Msg } from "@sfmc-bds/sdk/sapi/runtime";
+import { config } from "@sfmc-bds/sdk/sapi/config";
+import { ModuleRegistry } from "@sfmc-bds/sdk/module-loader";
 
 const MODULE_ID = "feature-afk";
 
@@ -52,6 +52,7 @@ function setAFK(player: Player): void {
   player.removeTag("NOAFK");
   startAFKScan();
   playerList.set(player.id, player.location);
+  // eslint-disable-next-line @sfmc-bds/no-player-send-message -- 全服广播 AFK 状态
   world.sendMessage(`§7* ${player.nameTag} is now AFK. *`);
   Msg.tips("已进入 AFK 状态", player);
   afkScanCache.set(player.id, { step: 0 });
@@ -93,6 +94,7 @@ function startAFKScan(): void {
         continue;
       }
       if (locationMoved(lastLoc, player.location)) {
+        // eslint-disable-next-line @sfmc-bds/no-player-send-message -- 全服广播 AFK 状态
         world.sendMessage(`§7* ${player.nameTag} is no longer AFK. *`);
         player.removeTag("AFK");
         afkScanCache.set(player.id, { lastLocation: player.location, step: 0 });
@@ -144,7 +146,7 @@ ModuleRegistry.register({
         debug.e("AFK", "configs/afk.json missing — using built-in defaults {afk_time:120, step_time:15}");
       }
 
-      config.onChange("afk", (key, value) => {
+      config.onChange((key, value) => {
         debug.i("AFK", `config.<${key}> changed: ${JSON.stringify(value)}`);
       });
 
@@ -157,7 +159,9 @@ ModuleRegistry.register({
       for (const player of world.getAllPlayers()) reset(player);
     },
     registerCommands() {
-      Command.register("afk", "afk.use", setAFK, "进入 AFK 状态", "afk");
+      Command.register("afk", "afk.use", (pl) => {
+        if (pl) setAFK(pl);
+      }, "进入 AFK 状态", "afk");
       Command.register("noafk", "afk.clear.other", (pl) => {
         if (pl) pl.addTag("NOAFK");
       }, "令玩家不会进入 AFK 状态", "afk");

@@ -1,12 +1,12 @@
 /**
- * @sfmc/module-gui — v2 入口
+ * @sfmc-bds/module-gui — v2 入口
  *
- * 主菜单 / 管理面板 / 货币 GUI。ChatGUI / LandGUI 来自对应业务包;
- * 合作社图形 UI 已并入 feature-coop 命令面(/coop)。
+ * 主菜单 / 管理面板 / 货币 GUI。ChatGUI 来自 @sfmc-bds/module-chat；LandGUI 来自 @sfmc-bds/module-land;
+ * 合作社图形 UI 已并入 feature-coop（包目录 coop）命令面(/coop)。
  */
 
-import { ModuleRegistry } from "@sfmc/sdk/module-loader";
-import { Permission, debug } from "@sfmc/sdk/sapi/runtime";
+import { ModuleRegistry } from "@sfmc-bds/sdk/module-loader";
+import { Permission, debug } from "@sfmc-bds/sdk/sapi/runtime";
 
 import { MainMenu } from "./MainMenu.js";
 import { MoneyGUI } from "./MoneyGUI.js";

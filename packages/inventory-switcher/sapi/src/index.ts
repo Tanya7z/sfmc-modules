@@ -1,5 +1,5 @@
 /**
- * @sfmc/module-inventory-switcher — v2 入口
+ * @sfmc-bds/module-inventory-switcher — v2 入口
  *
  * ModuleRegistry.register + 监听 playerGameModeChange,在 survival↔creative
  * 模式切换时把当前背包存到世界箱子阵列,再从对应箱子恢复另一模式背包。
@@ -14,14 +14,15 @@ import {
   EntityInventoryComponent,
   EquipmentSlot,
   GameMode,
+  ItemStack,
   Player,
   PlayerGameModeChangeAfterEvent,
   system,
   world,
 } from "@minecraft/server";
-import { config } from "@sfmc/sdk/sapi/config";
-import { debug, ensureDoubleChest, getChestCardinal, getLayout, getShanghaiTime, getSignFacing, placeSign } from "@sfmc/sdk/sapi/runtime";
-import { ModuleRegistry } from "@sfmc/sdk/module-loader";
+import { config } from "@sfmc-bds/sdk/sapi/config";
+import { debug, ensureDoubleChest, getChestCardinal, getLayout, getShanghaiTime, getSignFacing, placeSign } from "@sfmc-bds/sdk/sapi/runtime";
+import { ModuleRegistry } from "@sfmc-bds/sdk/module-loader";
 
 const MODULE_ID = "feature-inventory-switcher";
 
@@ -36,17 +37,32 @@ interface InventorySwitcherConfig {
   grid?: Grid;
 }
 
-type ContainerLike = { size: number; getItem(i: number): unknown; setItem(i: number, item: unknown): void };
+type ContainerLike = {
+  size: number;
+  getItem(i: number): ItemStack | undefined;
+  setItem(i: number, item: ItemStack | undefined): void;
+};
 
 const chestMap = new Map<string, number>();
-let gameModeSub: { unsubscribe(): void } | undefined;
+/** playerGameModeChange 订阅回调(SAPI 退订需传同一回调) */
+let gameModeCb: ((event: PlayerGameModeChangeAfterEvent) => void) | undefined;
 let grid: Grid | null = null;
+
+/** 配置字符串方向 → SDK 数值方向 */
+function directionToNum(d: "x" | "z"): number {
+  return d === "x" ? 1 : 2;
+}
+
+/** 配置朝向字符串 → SDK 数值 face */
+function faceToNum(f: "north" | "south" | "east" | "west"): number {
+  return f === "south" || f === "east" ? 1 : -1;
+}
 
 function getLayoutFor(index: number): { left: { x: number; y: number; z: number }; sign: { x: number; y: number; z: number } } {
   if (!grid) return { left: { x: 0, y: 0, z: 0 }, sign: { x: 0, y: 0, z: 0 } };
   const mainAxis = Math.floor(index / grid.size[1]);
   const yOffset = index % grid.size[1];
-  return getLayout(grid.start, grid.direction, mainAxis, yOffset, grid.face);
+  return getLayout(grid.start, directionToNum(grid.direction), mainAxis, yOffset, faceToNum(grid.face));
 }
 
 function getChestIndex(playerId: string, forCreative: boolean): number {
@@ -69,12 +85,14 @@ function saveToChest(player: Player, forCreative: boolean): void {
   if (!grid) return;
   const dim = world.getDimension("minecraft:overworld");
   const { left, sign } = getLayoutFor(getChestIndex(player.id, forCreative));
-  ensureDoubleChest(dim, left, getChestCardinal(grid.direction, grid.face), grid.direction);
+  const dir = directionToNum(grid.direction);
+  const face = faceToNum(grid.face);
+  ensureDoubleChest(dim, left, getChestCardinal(dir, face), dir);
   const { date, time } = getShanghaiTime();
   placeSign(
     dim,
     sign,
-    getSignFacing(grid.direction, grid.face),
+    getSignFacing(dir, face),
     `${player.nameTag}\n${forCreative ? "Creative" : "Survival"}\n${date}\n${time}`
   );
   const block = dim.getBlock(left);
@@ -119,7 +137,9 @@ function restoreFromChest(player: Player, forCreative: boolean): void {
   if (!grid) return;
   const dim = world.getDimension("minecraft:overworld");
   const { left } = getLayoutFor(getChestIndex(player.id, forCreative));
-  ensureDoubleChest(dim, left, getChestCardinal(grid.direction, grid.face), grid.direction);
+  const dir = directionToNum(grid.direction);
+  const face = faceToNum(grid.face);
+  ensureDoubleChest(dim, left, getChestCardinal(dir, face), dir);
   const block = dim.getBlock(left);
   if (!block) return;
   const invComp = block.getComponent(BlockComponentTypes.Inventory) as unknown as { container: ContainerLike } | undefined;
@@ -181,7 +201,7 @@ ModuleRegistry.register({
         return;
       }
       grid = cfg.grid;
-      gameModeSub = world.afterEvents.playerGameModeChange.subscribe((event: PlayerGameModeChangeAfterEvent) => {
+      gameModeCb = (event: PlayerGameModeChangeAfterEvent) => {
         const player = event.player;
         system.run(() => {
           if (player.getGameMode() !== event.toGameMode) return;
@@ -193,16 +213,19 @@ ModuleRegistry.register({
             restoreFromChest(player, false);
           }
         });
-      });
+      };
+      world.afterEvents.playerGameModeChange.subscribe(gameModeCb);
       debug.i("InventorySwitcher", "init: enabled with grid " + JSON.stringify(grid));
     },
     cleanup() {
-      try {
-        gameModeSub?.unsubscribe();
-      } catch {
-        /* ignore */
+      if (gameModeCb) {
+        try {
+          world.afterEvents.playerGameModeChange.unsubscribe(gameModeCb);
+        } catch {
+          /* ignore */
+        }
+        gameModeCb = undefined;
       }
-      gameModeSub = undefined;
       chestMap.clear();
     },
   },

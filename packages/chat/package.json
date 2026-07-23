@@ -1,0 +1,18 @@
+{
+  "name": "@sfmc-bds/module-chat",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "SAPI module: 聊天系统(合并 v1 chat + chat-gui)。SAPI 侧入口 sapi/src/index.ts。",
+  "main": "sapi/src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p sapi/tsconfig.json"
+  },
+  "dependencies": {
+    "@sfmc-bds/sdk": "*",
+    "@sfmc-bds/module-economy": "*"
+  },
+  "exports": {
+    ".": "./sapi/src/index.ts"
+  }
+}

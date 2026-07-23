@@ -12,7 +12,7 @@
  *   });
  */
 
-import type { TxContext } from "@sfmc/sdk/sapi/db";
+import type { TxContext } from "@sfmc-bds/sdk/sapi/db";
 
 export interface LandCubeInput {
   dimension: number;

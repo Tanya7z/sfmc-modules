@@ -1,14 +1,14 @@
 /**
- * @sfmc/module-land — v2 入口
+ * @sfmc-bds/module-land — v2 入口（含领地 GUI）
  *
- * ModuleRegistry + db.defineTable。跨模块扣款走 tx.call('economy.account.*')。
- * land.* service provides 在 manifest 声明;SAPI 侧 handler 桥接留待后续
- * (与 economy 不同,领地业务主要在 SAPI 进程)。
+ * ModuleRegistry + db.defineTable。跨模块扣款走 @sfmc-bds/module-economy/client。
+ * land.* service provides 在 manifest 声明；GUI（原 feature-land-gui）已并入本模块。
  */
 
-import { db } from "@sfmc/sdk/sapi/db";
-import { ModuleRegistry } from "@sfmc/sdk/module-loader";
-import { Permission } from "@sfmc/sdk/sapi/runtime";
+import { db } from "@sfmc-bds/sdk/sapi/db";
+import { ModuleRegistry } from "@sfmc-bds/sdk/module-loader";
+import { Permission } from "@sfmc-bds/sdk/sapi/runtime";
+import { registerLandGuiCommands } from "./land-gui.js";
 
 const MODULE_ID = "feature-land";
 
@@ -19,34 +19,36 @@ ModuleRegistry.register({
     registerPermissions() {
       Permission.register("land.use", Permission.Any);
       Permission.register("land.admin", Permission.OP);
+      Permission.register("land.gui.use", Permission.Any);
+      Permission.register("land.gui.admin", Permission.OP);
     },
 
     async init() {
       await db.defineTable(
         "lands",
         {
-          id: { type: "text", primary: true },
-          owner_player_id: { type: "text", notNull: true, index: true },
-          owner_name_snapshot: { type: "text", default: "" },
-          dimension: { type: "integer", notNull: true },
-          min_x: { type: "integer", notNull: true },
-          min_y: { type: "integer", notNull: true },
-          min_z: { type: "integer", notNull: true },
-          max_x: { type: "integer", notNull: true },
-          max_y: { type: "integer", notNull: true },
-          max_z: { type: "integer", notNull: true },
-          name: { type: "text", default: "" },
-          status: { type: "text", default: "active", index: true },
-          created_at: { type: "integer", notNull: true },
-          updated_at: { type: "integer", notNull: true },
-          expires_at: { type: "integer" },
-          protection_profile: { type: "text", default: "{}" },
-          version: { type: "integer", default: 1 },
-          purchase_price: { type: "integer", default: 0 },
-          refund_rate: { type: "real", default: 0.7 },
-          tax_rate: { type: "integer", default: 0 },
-          tax_due_at: { type: "integer" },
-          tax_frozen: { type: "integer", default: 0 },
+          id: { type: "TEXT", primary: true },
+          owner_player_id: { type: "TEXT", notNull: true, index: true },
+          owner_name_snapshot: { type: "TEXT", default: "" },
+          dimension: { type: "INTEGER", notNull: true },
+          min_x: { type: "INTEGER", notNull: true },
+          min_y: { type: "INTEGER", notNull: true },
+          min_z: { type: "INTEGER", notNull: true },
+          max_x: { type: "INTEGER", notNull: true },
+          max_y: { type: "INTEGER", notNull: true },
+          max_z: { type: "INTEGER", notNull: true },
+          name: { type: "TEXT", default: "" },
+          status: { type: "TEXT", default: "active", index: true },
+          created_at: { type: "INTEGER", notNull: true },
+          updated_at: { type: "INTEGER", notNull: true },
+          expires_at: { type: "INTEGER" },
+          protection_profile: { type: "TEXT", default: "{}" },
+          version: { type: "INTEGER", default: 1 },
+          purchase_price: { type: "INTEGER", default: 0 },
+          refund_rate: { type: "REAL", default: 0.7 },
+          tax_rate: { type: "INTEGER", default: 0 },
+          tax_due_at: { type: "INTEGER" },
+          tax_frozen: { type: "INTEGER", default: 0 },
         },
         { softDelete: true }
       );
@@ -54,13 +56,13 @@ ModuleRegistry.register({
       await db.defineTable(
         "land_members",
         {
-          id: { type: "text", primary: true },
-          land_id: { type: "text", notNull: true, index: true },
-          player_id: { type: "text", notNull: true, index: true },
-          player_name_snapshot: { type: "text", default: "" },
-          role: { type: "text", default: "admin" },
-          created_at: { type: "integer", notNull: true },
-          expires_at: { type: "integer" },
+          id: { type: "TEXT", primary: true },
+          land_id: { type: "TEXT", notNull: true, index: true },
+          player_id: { type: "TEXT", notNull: true, index: true },
+          player_name_snapshot: { type: "TEXT", default: "" },
+          role: { type: "TEXT", default: "admin" },
+          created_at: { type: "INTEGER", notNull: true },
+          expires_at: { type: "INTEGER" },
         },
         { softDelete: true }
       );
@@ -68,12 +70,12 @@ ModuleRegistry.register({
       await db.defineTable(
         "land_audit_logs",
         {
-          id: { type: "integer", primary: true },
-          land_id: { type: "text", notNull: true, index: true },
-          actor_id: { type: "text", notNull: true },
-          action: { type: "text", notNull: true, index: true },
-          payload: { type: "text", default: "{}" },
-          created_at: { type: "integer", notNull: true },
+          id: { type: "INTEGER", primary: true },
+          land_id: { type: "TEXT", notNull: true, index: true },
+          actor_id: { type: "TEXT", notNull: true },
+          action: { type: "TEXT", notNull: true, index: true },
+          payload: { type: "TEXT", default: "{}" },
+          created_at: { type: "INTEGER", notNull: true },
         },
         { softDelete: false }
       );
@@ -81,16 +83,18 @@ ModuleRegistry.register({
       await db.defineTable(
         "land_operations",
         {
-          request_id: { type: "text", primary: true },
-          operation_type: { type: "text", notNull: true },
-          actor_id: { type: "text", notNull: true },
-          land_id: { type: "text" },
-          status: { type: "text", notNull: true },
-          response_json: { type: "text", notNull: true, default: "{}" },
-          created_at: { type: "integer", notNull: true },
+          request_id: { type: "TEXT", primary: true },
+          operation_type: { type: "TEXT", notNull: true },
+          actor_id: { type: "TEXT", notNull: true },
+          land_id: { type: "TEXT" },
+          status: { type: "TEXT", notNull: true },
+          response_json: { type: "TEXT", notNull: true, default: "{}" },
+          created_at: { type: "INTEGER", notNull: true },
         },
         { softDelete: false }
       );
+
+      registerLandGuiCommands();
     },
 
     cleanup() {},
@@ -101,3 +105,13 @@ export { transferLand } from "./land-transfer.js";
 export { validateLandBox, findLandsByOwner } from "./land-validate.js";
 export { queryAuditLog } from "./land-audit.js";
 export type * from "./types.js";
+export {
+  LandGUI,
+  LandApi,
+  getSession,
+  initSession,
+  setPos,
+  clearSession,
+  registerLandGuiCommands,
+} from "./land-gui.js";
+export type { InviteRow, LandGuiLandRow, LandGuiMemberRow } from "./land-gui.js";

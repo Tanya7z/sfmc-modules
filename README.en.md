@@ -15,8 +15,7 @@ Each module under `packages/<id>/` ships:
 ```
 sfmc-modules/
 ├── packages/
-│   ├── land/                       # 领地 (v2 standard example)
-│   ├── land-gui/                   # 领地 GUI 表单
+│   ├── land/                       # land + GUI (v2 standard example)
 │   ├── economy/                    # 经济系统
 │   ├── chat/  chat-gui/            # 聊天
 │   ├── coop/  coop-gui/            # 合作社
@@ -102,7 +101,7 @@ cat > packages/my-module/sapi/manifest.json <<'EOF'
 EOF
 cat > packages/my-module/package.json <<'EOF'
 {
-  "name": "@sfmc/module-my-module",
+  "name": "@sfmc-bds/module-my-module",
   "version": "0.1.0",
   "type": "module",
   "main": "sapi/src/index.ts",
@@ -147,7 +146,6 @@ ModuleRegistry.register({
 # 拉全部模块到本地 BP 构建目录(主仓 scripts/ 下)
 cd ../ScriptsForMinecraftServer
 sfmc module install land --from github:Shiroha7z/sfmc-modules@latest
-sfmc module install land-gui --from github:Shiroha7z/sfmc-modules@latest
 sfmc behavior-pack build
 sfmc behavior-pack deploy
 ```

@@ -1,13 +1,13 @@
 /**
- * @sfmc/module-chat-sounds — v2 入口
+ * @sfmc-bds/module-chat-sounds — v2 入口
  *
  * 与 afk / spawn-protect 同型:ModuleRegistry.register + 零 SDK drawer。
  * 监听 world.beforeEvents.chatSend,关键词命中后给所有玩家放音效,带 200 tick 冷却。
  */
 
-import { system, world } from "@minecraft/server";
-import { debug } from "@sfmc/sdk/sapi/runtime";
-import { ModuleRegistry } from "@sfmc/sdk/module-loader";
+import { ChatSendBeforeEvent, GameMode, system, world } from "@minecraft/server";
+import { debug } from "@sfmc-bds/sdk/sapi/runtime";
+import { ModuleRegistry } from "@sfmc-bds/sdk/module-loader";
 
 const MODULE_ID = "feature-chat-sounds";
 
@@ -24,7 +24,8 @@ const KEYWORDS: Record<string, string> = {
 const COOLDOWN_TICKS = 200;
 
 const cooldownMap: Record<string, boolean> = {};
-let chatSub: { unsubscribe(): void } | undefined;
+// SAPI 的 event.subscribe 返回回调本身,退订需 event.unsubscribe(cb)
+let chatCb: ((event: ChatSendBeforeEvent) => void) | undefined;
 
 function playSoundForAll(soundId: string): void {
   system.run(() => {
@@ -54,12 +55,12 @@ ModuleRegistry.register({
       // 无对外命令 / 权限
     },
     async init() {
-      chatSub = world.beforeEvents.chatSend.subscribe((event) => {
+      chatCb = world.beforeEvents.chatSend.subscribe((event) => {
         const soundId = matchesKeyword(event.message);
         if (!soundId) return;
 
         const sender = event.sender;
-        if (sender.getGameMode() !== "creative") {
+        if (sender.getGameMode() !== GameMode.Creative) {
           const id = sender.id;
           if (cooldownMap[id]) return;
           cooldownMap[id] = true;
@@ -74,11 +75,11 @@ ModuleRegistry.register({
     },
     cleanup() {
       try {
-        chatSub?.unsubscribe();
+        if (chatCb) world.beforeEvents.chatSend.unsubscribe(chatCb);
       } catch {
         /* ignore */
       }
-      chatSub = undefined;
+      chatCb = undefined;
     },
   },
 });

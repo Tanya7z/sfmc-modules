@@ -1,19 +1,38 @@
 {
+  "$schema": "../../../node_modules/@sfmc-bds/sdk/schemas/sapi-manifest.v2.schema.json",
   "schemaVersion": 2,
   "id": "feature-qa",
   "name": "问答系统",
   "type": "feature",
   "configKey": "qa",
-  "requires": [],
-
+  "requires": ["feature-economy"],
   "permissions": [
-    "config:read:qa"
+    "config:read:qa",
+    "service:economy.account.credit",
+    "service:economy.account.debit"
   ],
-
   "services": {
     "provides": [],
-    "requires": []
+    "requires": [
+      {
+        "name": "economy.account.credit",
+        "input": {
+          "type": "object"
+        },
+        "output": {
+          "type": "object"
+        }
+      },
+      {
+        "name": "economy.account.debit",
+        "input": {
+          "type": "object"
+        },
+        "output": {
+          "type": "object"
+        }
+      }
+    ]
   },
-
-  "notes": "v2 定时出题 + 玩家答题 + 奖惩发放。题目库来自 configs/qa.json(原 questions.json),通过 SDK config.get 读取;奖惩 money 部分走 SDK runtime Money 类(临时,与未来 feature-economy v2 迁移后将改用 service.get economy.* 衔接)。迁移自 v1 QA.ts,原 QAManager 单例改为 ModuleRegistry.register 的模块级状态。"
+  "notes": "v2 定时出题 + 玩家答题 + 奖惩发放。题目库来自 configs/qa.json,通过 SDK config.get 读取;money 奖惩走 @sfmc-bds/module-economy/client(economy.account.credit/debit)。"
 }

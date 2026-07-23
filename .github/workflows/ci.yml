@@ -16,6 +16,16 @@ jobs:
           node-version: "22"
       - name: Validate v2 manifests
         run: node tools/check-modules.js
+      - name: Validate @minecraft/* versions
+        env:
+          SFMC_PLATFORM_ROOT: ${{ github.workspace }}/../ScriptsForMinecraftServer
+        run: |
+          # PR 仅本仓时跳过；与主仓同 workspace 的联调 CI 可 checkout 主仓后启用
+          if [[ -f "../ScriptsForMinecraftServer/tools/check-minecraft-versions.mjs" ]]; then
+            node tools/check-minecraft-versions.mjs
+          else
+            echo "(skipped: 旁路主仓未 checkout — 主仓 ootb CI 会校验)"
+          fi
       - name: Sync index.json
         run: node tools/sync-index.js
       - name: Verify index.json committed

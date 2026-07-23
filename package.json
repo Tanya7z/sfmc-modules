@@ -1,0 +1,36 @@
+{
+  "name": "sfmc-modules",
+  "private": true,
+  "type": "module",
+  "description": "SFMC v2 first-party modules. Develop here; install into ScriptsForMinecraftServer via fetch-module.",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "check": "node tools/check-modules.js && node tools/check-minecraft-versions.mjs",
+    "check-minecraft-versions": "node tools/check-minecraft-versions.mjs",
+    "sync-index": "node tools/sync-index.js",
+    "new": "node tools/new-module.mjs",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "postinstall": "node tools/ensure-sdk-link.mjs"
+  },
+  "devDependencies": {
+    "@minecraft/server": "2.10.0-beta.1.26.40-preview.30",
+    "@minecraft/server-net": "1.0.0-beta.11940b24",
+    "@minecraft/server-ui": "2.2.0-beta.1.26.40-preview.30",
+    "@minecraft/vanilla-data": "1.26.40-preview.30",
+    "@sfmc-bds/eslint-plugin": "file:../ScriptsForMinecraftServer/modules/sdk/@sfmc-eslint-plugin",
+    "@types/node": "^26.1.1",
+    "@typescript-eslint/eslint-plugin": "^8.64.0",
+    "@typescript-eslint/parser": "^8.64.0",
+    "eslint": "^10.7.0",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@sfmc-bds/sdk": "file:../ScriptsForMinecraftServer/modules/sdk/@sfmc-sdk"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

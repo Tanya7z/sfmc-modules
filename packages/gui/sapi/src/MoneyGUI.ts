@@ -1,9 +1,10 @@
 import { Player, world } from "@minecraft/server";
-import { Command } from "@sfmc/sdk/sapi/runtime";
-import { debug } from "@sfmc/sdk/sapi/runtime";
-import { Money } from "@sfmc/sdk/sapi/runtime";
-import { FormStatus, MenuNavigator, obsStr } from "@sfmc/sdk/sapi/runtime";
-import { ListFormInfo } from "@sfmc/sdk/sapi/runtime";
+import { Command } from "@sfmc-bds/sdk/sapi/runtime";
+import { debug } from "@sfmc-bds/sdk/sapi/runtime";
+import { Money } from "@sfmc-bds/sdk/sapi/runtime";
+import { FormStatus, MenuNavigator, obsStr, type Page } from "@sfmc-bds/sdk/sapi/runtime";
+import { ListFormInfo } from "@sfmc-bds/sdk/sapi/runtime";
+import { economy } from "@sfmc-bds/module-economy/client";
 
 export class MoneyGUI {
   static registerCommand() {
@@ -24,14 +25,14 @@ export class MoneyGUI {
     debug.i("GUI", `MoneyGUI.show: player=${player.name}`);
     const nav = new MenuNavigator(player);
 
-    nav.section("main", "货币管理", (page: any) => {
+    nav.section("main", "货币管理", (page: Page) => {
       const balance = Money.get(player);
       page.label(ListFormInfo([`当前余额: ${balance} ${Money.UNIT}。`]));
       page.button("给予玩家", () => nav.go("give"));
       page.button("查询玩家", () => nav.go("query"));
     });
 
-    nav.section("give", "给予玩家", (page: any) => {
+    nav.section("give", "给予玩家", (page: Page) => {
       const status = new FormStatus(page);
       const targetName = obsStr("");
       const amountStr = obsStr("");
@@ -49,7 +50,19 @@ export class MoneyGUI {
           status.fail(`未找到玩家「${name}」。`);
           return;
         }
-        if (!(await Money.add(target, val))) {
+        try {
+          const result = await economy.account.credit({
+            playerId: target.id,
+            playerName: target.name,
+            amount: val,
+            reason: "admin_grant",
+          });
+          if (typeof result.balance === "number") {
+            Money.setCached(target, result.balance, result.version ?? 0);
+          } else {
+            await Money.load(target);
+          }
+        } catch {
           status.fail("发放失败，请稍后重试。");
           return;
         }
@@ -58,7 +71,7 @@ export class MoneyGUI {
       });
     });
 
-    nav.section("query", "查询玩家", (page: any) => {
+    nav.section("query", "查询玩家", (page: Page) => {
       const status = new FormStatus(page);
       const targetName = obsStr("");
       page.textField("玩家名称", targetName, { description: "请输入玩家名称" });

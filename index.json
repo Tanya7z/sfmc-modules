@@ -1,7 +1,7 @@
 {
   "_comment": "first-party registry index — fetched by tools/fetch-module.mjs。schema: modules.<packageFolder> → { repo, tag }。id 与 packages/<folder> 同名(afk 而非 feature-afk)。",
   "version": 1,
-  "generatedAt": "2026-07-22T05:49:21.233Z",
+  "generatedAt": "2026-07-23T09:13:18.797Z",
   "modules": {
     "activity-log": {
       "repo": "Tanya7z/sfmc-modules",
@@ -27,18 +27,6 @@
       "repo": "Tanya7z/sfmc-modules",
       "tag": "modules-v0.4.0"
     },
-    "feature-area": {
-      "repo": "Tanya7z/sfmc-modules",
-      "tag": "modules-v0.4.0"
-    },
-    "feature-chat": {
-      "repo": "Tanya7z/sfmc-modules",
-      "tag": "modules-v0.4.0"
-    },
-    "feature-coop": {
-      "repo": "Tanya7z/sfmc-modules",
-      "tag": "modules-v0.4.0"
-    },
     "gui": {
       "repo": "Tanya7z/sfmc-modules",
       "tag": "modules-v0.4.0"
@@ -48,10 +36,6 @@
       "tag": "modules-v0.4.0"
     },
     "land": {
-      "repo": "Tanya7z/sfmc-modules",
-      "tag": "modules-v0.4.0"
-    },
-    "land-gui": {
       "repo": "Tanya7z/sfmc-modules",
       "tag": "modules-v0.4.0"
     },
@@ -76,6 +60,18 @@
       "tag": "modules-v0.4.0"
     },
     "tps": {
+      "repo": "Tanya7z/sfmc-modules",
+      "tag": "modules-v0.4.0"
+    },
+    "area": {
+      "repo": "Tanya7z/sfmc-modules",
+      "tag": "modules-v0.4.0"
+    },
+    "chat": {
+      "repo": "Tanya7z/sfmc-modules",
+      "tag": "modules-v0.4.0"
+    },
+    "coop": {
       "repo": "Tanya7z/sfmc-modules",
       "tag": "modules-v0.4.0"
     }

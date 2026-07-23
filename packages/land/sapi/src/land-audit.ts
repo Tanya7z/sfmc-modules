@@ -4,10 +4,10 @@
  * 不走事务(只读),走 db.query。
  */
 
-import { db } from "@sfmc/sdk/sapi/db";
-import type { WhereExpr } from "@sfmc/sdk/sapi/db";
+import { db } from "@sfmc-bds/sdk/sapi/db";
+import type { WhereExpr } from "@sfmc-bds/sdk/sapi/db";
 
-export interface AuditRow {
+export interface AuditRow extends Record<string, unknown> {
   id: number;
   land_id: string;
   actor_id: string;

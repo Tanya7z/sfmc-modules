@@ -1,10 +1,9 @@
 import { Player } from "@minecraft/server";
-import { CreativeArea } from "@sfmc/module-creative";
-import { Peace } from "@sfmc/module-peace";
-import { HttpDB } from "@sfmc/sdk/sapi/runtime";
-import { ConfigManager } from "@sfmc/sdk/module-loader";
-import { MenuNavigator, obsBool } from "@sfmc/sdk/sapi/runtime";
-import { ListFormInfo, Msg } from "@sfmc/sdk/sapi/runtime";
+import { setCreativeChainEnabled } from "@sfmc-bds/module-area";
+import { HttpDB } from "@sfmc-bds/sdk/sapi/runtime";
+import { ConfigManager } from "@sfmc-bds/sdk/module-loader";
+import { MenuNavigator, obsBool, type Page } from "@sfmc-bds/sdk/sapi/runtime";
+import { ListFormInfo, Msg } from "@sfmc-bds/sdk/sapi/runtime";
 
 const MODULES = [
   "fly",
@@ -34,18 +33,18 @@ export class AdminGUI {
   private constructor(player: Player) {
     this.player = player;
     this.nav = new MenuNavigator(player);
-    this.nav.section("main", "管理面板", (p: any) => this.buildMain(p));
+    this.nav.section("main", "管理面板", (p: Page) => this.buildMain(p));
   }
 
   static show(player: Player): void {
     new AdminGUI(player).nav.start("main");
   }
 
-  private buildMain(page: any): void {
+  private buildMain(page: Page): void {
     page.label(ListFormInfo(["模块开关"]));
     for (const name of MODULES) {
       const toggle = obsBool(ConfigManager.isEnabled(name));
-      toggle.subscribe((val: any) => {
+      toggle.subscribe((val: boolean) => {
         if (val !== ConfigManager.isEnabled(name)) this.onToggle(name, val);
       });
       page.toggle(name, toggle);
@@ -66,7 +65,9 @@ export class AdminGUI {
   }
 
   private static applyRuntimeState(name: string, enabled: boolean): void {
-    if (name === "creative") CreativeArea.enable = enabled;
-    if (name === "peace") Peace.getInstance().enable = enabled;
+    // peace 由 area features 配置控制,无本地 enable;creative/survival 共用连锁开关
+    if (name === "creative" || name === "survival") {
+      setCreativeChainEnabled(enabled);
+    }
   }
 }

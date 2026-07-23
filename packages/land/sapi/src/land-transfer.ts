@@ -8,10 +8,11 @@
  *   - 删原 land_members(owner),新增新 owner member 行
  *   - 若新 owner = 当前 player = 自己 = 报错
  *
- * 注:跨模块扣款在 tx 内通过 tx.call('economy.account.debit/credit') 走。
+ * 注:跨模块扣款在 tx 内通过 economy.account.inTx(tx).debit/credit 走。
  */
 
-import { db, type TxContext, DbError } from "@sfmc/sdk/sapi/db";
+import { db, type TxContext, DbError } from "@sfmc-bds/sdk/sapi/db";
+import { economy } from "@sfmc-bds/module-economy/client";
 
 export interface TransferInput {
   landId: string;
@@ -105,14 +106,15 @@ async function runTransferSteps(tx: TxContext, input: TransferInput): Promise<Tr
     created_at: now,
   });
 
-  // 7. 跨模块:扣款 + 加款(在事务里通过 service.get 实现)
+  // 7. 跨模块:扣款 + 加款(事务内走 economy client)
   if (input.transferPrice > 0) {
-    await tx.call("economy.account.debit", {
+    const eco = economy.account.inTx(tx);
+    await eco.debit({
       playerId: input.currentOwnerId,
       amount: input.transferPrice,
       reason: `land.transfer:${input.landId}`,
     });
-    await tx.call("economy.account.credit", {
+    await eco.credit({
       playerId: input.newOwnerId,
       amount: input.transferPrice,
       reason: `land.transfer.receive:${input.landId}`,

@@ -1,0 +1,8 @@
+{
+  "json.schemas": [
+    {
+      "fileMatch": ["**/sapi/manifest.json"],
+      "url": "./node_modules/@sfmc-bds/sdk/schemas/sapi-manifest.v2.schema.json"
+    }
+  ]
+}

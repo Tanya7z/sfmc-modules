@@ -1,13 +1,13 @@
 /**
- * @sfmc/module-scoreboard-sync — v2 入口
+ * @sfmc-bds/module-scoreboard-sync — v2 入口
  *
  * 计分板备份/恢复:db.tx 读写平台表 sfmc_scoreboards。
  */
 
 import { Player, system, world } from "@minecraft/server";
-import { db } from "@sfmc/sdk/sapi/db";
-import { Command, debug, Msg, Permission } from "@sfmc/sdk/sapi/runtime";
-import { ModuleRegistry } from "@sfmc/sdk/module-loader";
+import { db } from "@sfmc-bds/sdk/sapi/db";
+import { Command, debug, Msg, Permission } from "@sfmc-bds/sdk/sapi/runtime";
+import { ModuleRegistry } from "@sfmc-bds/sdk/module-loader";
 
 const MODULE_ID = "feature-scoreboard-sync";
 
@@ -126,7 +126,7 @@ ModuleRegistry.register({
           if (player) {
             Msg.info(message, player);
           } else {
-            world.sendMessage(message);
+            debug.i("ScoreboardSync", message);
           }
         },
         "从数据库恢复计分板",

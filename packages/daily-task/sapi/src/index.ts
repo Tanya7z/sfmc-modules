@@ -1,41 +1,20 @@
 /**
- * @sfmc/module-daily-task — v2 入口
+ * @sfmc-bds/module-daily-task — v2 入口
  *
- * ModuleRegistry.register + 跨模块调 service.get("economy.dailyTasks.*")。
+ * ModuleRegistry.register + 跨模块调 @sfmc-bds/module-economy/client 的 economy.dailyTasks.*。
  * /task 命令打开 MenuNavigator,列出活跃任务,允许玩家提交物品换 reward。
  */
 
 import { Player, world } from "@minecraft/server";
-import { service } from "@sfmc/sdk/sapi/service";
-import { Command, debug, FormStatus, ListFormInfo, MenuNavigator, Money, obsNum, Permission } from "@sfmc/sdk/sapi/runtime";
-import { ModuleRegistry } from "@sfmc/sdk/module-loader";
+import { Command, debug, FormStatus, ListFormInfo, MenuNavigator, Money, obsNum, Permission } from "@sfmc-bds/sdk/sapi/runtime";
+import { ModuleRegistry } from "@sfmc-bds/sdk/module-loader";
+import { economy, type DailyTaskRow, type DailyTaskSubmitResult } from "@sfmc-bds/module-economy/client";
 
 const MODULE_ID = "feature-daily-task";
 
-interface DailyTaskRow {
-  id: string;
-  item_type: string;
-  item_aux?: number;
-  target_qty: number;
-  filled_qty: number;
-  unit_reward: number;
-}
-
-interface DailyTasksEnvelope {
-  tasks: DailyTaskRow[];
-}
-
-interface SubmitResult {
-  ok: boolean;
-  reward?: number;
-  balance?: number;
-  balanceVersion?: number;
-  error?: string;
-}
-
 async function listTasks(): Promise<DailyTaskRow[]> {
   try {
-    const env = await service.get<DailyTasksEnvelope>("economy.dailyTasks.list");
+    const env = await economy.dailyTasks.list();
     return env?.tasks ?? [];
   } catch (err) {
     debug.w("DailyTask", `list failed: ${(err as Error).message}`);
@@ -43,8 +22,8 @@ async function listTasks(): Promise<DailyTaskRow[]> {
   }
 }
 
-async function submitTask(task: DailyTaskRow, player: Player, qty: number): Promise<SubmitResult> {
-  return service.get<SubmitResult>("economy.dailyTasks.submit", {
+async function submitTask(task: DailyTaskRow, player: Player, qty: number): Promise<DailyTaskSubmitResult> {
+  return economy.dailyTasks.submit({
     taskId: task.id,
     actorId: player.id,
     actorName: player.name,

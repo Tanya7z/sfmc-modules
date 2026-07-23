@@ -1,13 +1,13 @@
 /**
- * @sfmc/module-spawn-protect — v2 入口
+ * @sfmc-bds/module-spawn-protect — v2 入口
  *
  * 与 afk v2 同型:ModuleRegistry.register + 零 db / 零 service。
  * 玩家重生事件订阅 → 加 resistance 效果 (3 秒, amplifier 5)。
  */
 
 import { Player, world } from "@minecraft/server";
-import { debug } from "@sfmc/sdk/sapi/runtime";
-import { ModuleRegistry } from "@sfmc/sdk/module-loader";
+import { debug } from "@sfmc-bds/sdk/sapi/runtime";
+import { ModuleRegistry } from "@sfmc-bds/sdk/module-loader";
 
 const MODULE_ID = "feature-spawn-protect";
 

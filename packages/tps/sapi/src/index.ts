@@ -1,5 +1,5 @@
 /**
- * @sfmc/module-tps — v2 入口
+ * @sfmc-bds/module-tps — v2 入口
  *
  * ModuleRegistry.register + 提供两个 service:
  *   - tps.current  → number (当前 TPS,两位小数,上限 20)
@@ -8,9 +8,9 @@
  * 与 afk/spawn-protect/chat-sounds 同型但额外暴露 service(供 monitor 等消费方用)。
  */
 
-import { Player, system, world } from "@minecraft/server";
-import { Command, debug, Msg, Permission } from "@sfmc/sdk/sapi/runtime";
-import { ModuleRegistry } from "@sfmc/sdk/module-loader";
+import { Player, system } from "@minecraft/server";
+import { Command, debug, Msg, Permission } from "@sfmc-bds/sdk/sapi/runtime";
+import { ModuleRegistry } from "@sfmc-bds/sdk/module-loader";
 
 const MODULE_ID = "feature-tps";
 
@@ -80,7 +80,7 @@ ModuleRegistry.register({
           if (player) {
             Msg.info(msg, player);
           } else {
-            world.sendMessage(msg);
+            debug.i("TPS", msg);
           }
         },
         "查看服务器 TPS",

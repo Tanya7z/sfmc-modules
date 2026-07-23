@@ -1,5 +1,5 @@
 /**
- * @sfmc/module-data-backup — v2 入口
+ * @sfmc-bds/module-data-backup — v2 入口
  *
  * core 模块(驻留主仓)。替代 v1 PlayerData / PlayersDataApi / WorldData / WorldDataApi 四件,
  * 统一在 ModuleRegistry.register 的 lifecycle 里订阅 playerSpawn / world.afterEvents,
@@ -9,9 +9,9 @@
  */
 
 import { Player, system, world } from "@minecraft/server";
-import { db } from "@sfmc/sdk/sapi/db";
-import { debug, getShanghaiTime } from "@sfmc/sdk/sapi/runtime";
-import { ModuleRegistry } from "@sfmc/sdk/module-loader";
+import { db } from "@sfmc-bds/sdk/sapi/db";
+import { debug, getShanghaiTime } from "@sfmc-bds/sdk/sapi/runtime";
+import { ModuleRegistry } from "@sfmc-bds/sdk/module-loader";
 
 const MODULE_ID = "core-data-backup";
 
@@ -140,7 +140,8 @@ async function saveWorld(): Promise<void> {
   });
 }
 
-let playerSpawnSub: { unsubscribe(): void } | undefined;
+/** playerSpawn 订阅回调(SAPI 退订需传同一回调) */
+let playerSpawnCb: ((event: { initialSpawn: boolean; player: Player }) => void) | undefined;
 let flushRunId: number | undefined;
 
 ModuleRegistry.register({
@@ -151,27 +152,30 @@ ModuleRegistry.register({
       // core 模块,不对外暴露命令
     },
     async init() {
-      playerSpawnSub = world.afterEvents.playerSpawn.subscribe((event) => {
+      playerSpawnCb = (event) => {
         if (event.initialSpawn) {
           void upsertPlayer(snapshotPlayer(event.player));
         }
-      });
+      };
+      world.afterEvents.playerSpawn.subscribe(playerSpawnCb);
       flushRunId = system.runInterval(() => {
         void saveAllPlayers();
         void saveWorld();
       }, FLUSH_INTERVAL_TICKS);
 
-      world.afterEvents.worldInitialize.subscribe(() => {
-        void saveWorld();
-      });
+      // 世界已加载后立即落盘一次(WorldAfterEvents 无 worldInitialize)
+      void saveWorld();
 
       debug.i("DATA", "init");
     },
     cleanup() {
-      try {
-        playerSpawnSub?.unsubscribe();
-      } catch {
-        /* ignore */
+      if (playerSpawnCb) {
+        try {
+          world.afterEvents.playerSpawn.unsubscribe(playerSpawnCb);
+        } catch {
+          /* ignore */
+        }
+        playerSpawnCb = undefined;
       }
       if (flushRunId !== undefined) {
         try {
@@ -179,6 +183,7 @@ ModuleRegistry.register({
         } catch {
           /* ignore */
         }
+        flushRunId = undefined;
       }
       debug.i("DATA", "stop");
     },

@@ -1,5 +1,5 @@
 {
-  "name": "@sfmc/module-gui",
+  "name": "@sfmc-bds/module-gui",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,11 +9,10 @@
     "typecheck": "tsc --noEmit -p sapi/tsconfig.json"
   },
   "dependencies": {
-    "@sfmc/sdk": "*",
-    "@sfmc/module-feature-chat": "*",
-    "@sfmc/module-land-gui": "*"
-  },
-  "peerDependencies": {
-    "@minecraft/server": "2.10.0-beta.1.26.40-preview.30"
+    "@sfmc-bds/sdk": "*",
+    "@sfmc-bds/module-area": "*",
+    "@sfmc-bds/module-economy": "*",
+    "@sfmc-bds/module-land": "*",
+    "@sfmc-bds/module-chat": "*"
   }
 }

@@ -1,5 +1,5 @@
 /**
- * @sfmc/module-activity-log — v2 入口
+ * @sfmc-bds/module-activity-log — v2 入口
  *
  * ModuleRegistry.register + 19 种 SAPI 事件订阅 + 内存队列 + 2s flush
  * 批量写 sfmc_activities(平台 bootstrap 表,非 defineTable)。
@@ -8,10 +8,17 @@
  * sfmc_activities schema 是 snake_case,在 flush 时映射。
  */
 
-import { Block, Entity, Player, system, Vector3, world } from "@minecraft/server";
-import { db } from "@sfmc/sdk/sapi/db";
-import { debug } from "@sfmc/sdk/sapi/runtime";
-import { ModuleRegistry } from "@sfmc/sdk/module-loader";
+import {
+  Block,
+  Entity,
+  Player,
+  system,
+  Vector3,
+  world,
+} from "@minecraft/server";
+import { db } from "@sfmc-bds/sdk/sapi/db";
+import { debug } from "@sfmc-bds/sdk/sapi/runtime";
+import { ModuleRegistry } from "@sfmc-bds/sdk/module-loader";
 
 const MODULE_ID = "feature-activity-log";
 
@@ -95,7 +102,11 @@ function makeId(): string {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function playerEntry(player: Player, eventType: string, extra: Partial<Entry> = {}): Entry {
+function playerEntry(
+  player: Player,
+  eventType: string,
+  extra: Partial<Entry> = {},
+): Entry {
   const [x, y, z] = loc(player.location);
   return {
     id: makeId(),
@@ -206,7 +217,10 @@ async function flush(): Promise<void> {
       }
     });
   } catch (err) {
-    debug.w("ActivityLog", `flush failed (${batch.length} entries retained): ${(err as Error).message}`);
+    debug.w(
+      "ActivityLog",
+      `flush failed (${batch.length} entries retained): ${(err as Error).message}`,
+    );
     queue = batch.concat(queue);
   }
 }
@@ -227,7 +241,10 @@ async function doCleanup(): Promise<void> {
   }
 }
 
-function safeSubscribe(signal: { subscribe?: (cb: (arg: unknown) => void) => unknown }, cb: (arg: any) => void): void {
+function safeSubscribe(
+  signal: { subscribe?: (cb: (arg: unknown) => void) => unknown },
+  cb: (arg: any) => void,
+): void {
   if (signal && typeof signal.subscribe === "function") {
     const sub = signal.subscribe(cb) as { unsubscribe?: () => void };
     if (sub && typeof sub.unsubscribe === "function") {
@@ -279,7 +296,7 @@ function subscribe(): void {
           fromLoc: { x: fx, y: fy, z: fz },
           toLoc: { x: tx, y: ty, z: tz },
         },
-      })
+      }),
     );
   });
 
@@ -288,7 +305,7 @@ function subscribe(): void {
     enqueue(
       playerEntry(event.player, "player.gamemode", {
         detail: { from: event.fromGameMode, to: event.toGameMode },
-      })
+      }),
     );
   });
 
@@ -301,7 +318,7 @@ function subscribe(): void {
           message: event.message,
           targets: targets.length > 0 ? targets : undefined,
         },
-      })
+      }),
     );
   });
 
@@ -319,7 +336,7 @@ function subscribe(): void {
           itemBefore: event.itemStackBeforeBreak?.type?.id || null,
           itemAfter: event.itemStackAfterBreak?.type?.id || null,
         },
-      })
+      }),
     );
   });
 
@@ -333,7 +350,7 @@ function subscribe(): void {
         targetX: bx,
         targetY: by,
         targetZ: bz,
-      })
+      }),
     );
   });
 
@@ -361,7 +378,7 @@ function subscribe(): void {
           targetY: dy,
           targetZ: dz,
           detail: { cause, projectile: proj?.typeId || null },
-        })
+        }),
       );
     } else {
       const [kx, ky, kz] = killer ? loc(killer.location) : [null, null, null];
@@ -382,7 +399,7 @@ function subscribe(): void {
           targetY: dy,
           targetZ: dz,
           detail: { cause, projectile: ds.damagingProjectile?.typeId || null },
-        })
+        }),
       );
     }
   });
@@ -396,16 +413,20 @@ function subscribe(): void {
     if (attacker.typeId === "minecraft:player") {
       enqueue(
         playerEntry(attacker as Player, "entity.hit", {
-          targetType: victim.typeId === "minecraft:player" ? "player" : "entity",
+          targetType:
+            victim.typeId === "minecraft:player" ? "player" : "entity",
           targetid: getTargetPlayerId(victim),
           targetName: getTargetPlayerName(victim),
           targetX: vx,
           targetY: vy,
           targetZ: vz,
-        })
+        }),
       );
     }
-    if (victim.typeId === "minecraft:player" && attacker.typeId !== "minecraft:player") {
+    if (
+      victim.typeId === "minecraft:player" &&
+      attacker.typeId !== "minecraft:player"
+    ) {
       const [ax, ay, az] = loc(attacker.location);
       enqueue(
         genericEntry({
@@ -423,7 +444,7 @@ function subscribe(): void {
           targetX: vx,
           targetY: vy,
           targetZ: vz,
-        })
+        }),
       );
     }
   });
@@ -442,7 +463,7 @@ function subscribe(): void {
           damager: ds.damagingEntity?.typeId || null,
           projectile: ds.damagingProjectile?.typeId || null,
         },
-      })
+      }),
     );
   });
 
@@ -462,7 +483,7 @@ function subscribe(): void {
           item: event.itemStack?.type?.id || null,
           itemBefore: event.beforeItemStack?.type?.id || null,
         },
-      })
+      }),
     );
   });
 
@@ -479,7 +500,7 @@ function subscribe(): void {
         targetX: tx,
         targetY: ty,
         targetZ: tz,
-      })
+      }),
     );
   });
 
@@ -499,7 +520,7 @@ function subscribe(): void {
         sourceY: ey,
         sourceZ: ez,
         detail: { cause: event.cause },
-      })
+      }),
     );
   });
 
@@ -507,9 +528,13 @@ function subscribe(): void {
     if (!ENABLED_EVENTS.has("item.drop")) return;
     const e = event.entity;
     const [ex, ey, ez] = loc(e.location);
-    const itemList = event.items.map((item: any) => item.typeId).filter(Boolean);
+    const itemList = event.items
+      .map((item: any) => item.typeId)
+      .filter(Boolean);
     if (e.typeId === "minecraft:player") {
-      enqueue(playerEntry(e as Player, "item.drop", { detail: { items: itemList } }));
+      enqueue(
+        playerEntry(e as Player, "item.drop", { detail: { items: itemList } }),
+      );
     } else {
       enqueue(
         genericEntry({
@@ -522,7 +547,7 @@ function subscribe(): void {
           sourceY: ey,
           sourceZ: ez,
           detail: { items: itemList },
-        })
+        }),
       );
     }
   });
@@ -536,7 +561,7 @@ function subscribe(): void {
         detail: {
           items: event.items.map((item: any) => item.type.id),
         },
-      })
+      }),
     );
   });
 
@@ -552,7 +577,7 @@ function subscribe(): void {
         targetX: bx,
         targetY: by,
         targetZ: bz,
-      })
+      }),
     );
   });
 
@@ -568,7 +593,7 @@ function subscribe(): void {
         targetX: bx,
         targetY: by,
         targetZ: bz,
-      })
+      }),
     );
   });
 
@@ -581,14 +606,22 @@ function subscribe(): void {
       genericEntry({
         eventType: "world.explosion",
         dimension,
-        sourceType: source ? (source.typeId === "minecraft:player" ? "player" : "entity") : "world",
-        sourceid: source?.typeId === "minecraft:player" ? playerId(source as Player) : "",
+        sourceType:
+          source ?
+            source.typeId === "minecraft:player" ?
+              "player"
+            : "entity"
+          : "world",
+        sourceid:
+          source?.typeId === "minecraft:player" ?
+            playerId(source as Player)
+          : "",
         sourceName: source?.typeId || "unknown",
         sourceX: sx,
         sourceY: sy,
         sourceZ: sz,
         detail: { impactedBlocks: event.getImpactedBlocks().length },
-      })
+      }),
     );
   });
 }
@@ -607,12 +640,18 @@ ModuleRegistry.register({
 
       subscribe();
 
-      flushIntervalId = system.runInterval(() => void flush(), FLUSH_INTERVAL_TICKS);
+      flushIntervalId = system.runInterval(
+        () => void flush(),
+        FLUSH_INTERVAL_TICKS,
+      );
 
       cleanupStartTimeoutId = system.runTimeout(() => {
         cleanupStartTimeoutId = undefined;
         void doCleanup();
-        cleanupIntervalId = system.runInterval(() => void doCleanup(), CLEANUP_INTERVAL_TICKS);
+        cleanupIntervalId = system.runInterval(
+          () => void doCleanup(),
+          CLEANUP_INTERVAL_TICKS,
+        );
       }, CLEANUP_START_DELAY_TICKS);
 
       debug.i("DATA", "ActivityLog.init");

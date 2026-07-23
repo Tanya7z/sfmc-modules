@@ -1,15 +1,16 @@
 /**
- * @sfmc/module-qa — v2 入口
+ * @sfmc-bds/module-qa — v2 入口
  *
  * ModuleRegistry.register + 定时出题、玩家答题与奖惩。
  * - 配置:config.get("qa") 读 questions / qa_interval_{min,max} / qa_timeout
- * - 跨模块:Money 暂用 SDK runtime Money(待 feature-economy v2 迁移后改 service.get)
+ * - 跨模块:money 奖惩走 @sfmc-bds/module-economy/client
  */
 
-import { Player, system, world } from "@minecraft/server";
-import { config } from "@sfmc/sdk/sapi/config";
-import { debug, getRandomInteger, Money, Msg } from "@sfmc/sdk/sapi/runtime";
-import { ModuleRegistry } from "@sfmc/sdk/module-loader";
+import { ChatSendBeforeEvent, Player, system, world } from "@minecraft/server";
+import { config } from "@sfmc-bds/sdk/sapi/config";
+import { debug, getRandomInteger, Money, Msg } from "@sfmc-bds/sdk/sapi/runtime";
+import { ModuleRegistry } from "@sfmc-bds/sdk/module-loader";
+import { economy } from "@sfmc-bds/module-economy/client";
 
 const MODULE_ID = "feature-qa";
 
@@ -48,7 +49,8 @@ let playerList: Record<string, boolean> = {};
 let rightAmount = 0;
 let wrongAmount = 0;
 
-let chatSub: { unsubscribe(): void } | undefined;
+// SAPI 的 event.subscribe 返回回调本身,退订需 event.unsubscribe(cb)
+let chatCb: ((event: ChatSendBeforeEvent) => void) | undefined;
 let timeoutId: number | undefined = undefined;
 let finishTimeoutId: number | undefined = undefined;
 
@@ -77,7 +79,7 @@ function pickNextQuestion(): void {
   for (let i = 0; i < questions.length; i++) {
     if (!record.includes(i)) {
       pool.push(i);
-      totalWeight += questions[i].weight;
+      totalWeight += questions[i]!.weight;
       startPoints.push(totalWeight);
     }
   }
@@ -98,8 +100,13 @@ function pickNextQuestion(): void {
     }
   }
 
+  if (nowQuestion === undefined) return;
+  const picked = questions[nowQuestion];
+  if (!picked) return;
+
+  // eslint-disable-next-line @sfmc-bds/no-player-send-message -- 全服广播出题
   world.sendMessage(
-    `§b[Baka Cirno]§r §g${questions[nowQuestion!].question}§r\n  §h发送 §e!答案§r §h来答题`
+    `§b[Baka Cirno]§r §g${picked.question}§r\n  §h发送 §e!答案§r §h来答题`
   );
   finishTimeoutId = system.runTimeout(
     () => {
@@ -113,6 +120,8 @@ function pickNextQuestion(): void {
 function finishQuestion(): void {
   if (nowQuestion === undefined) return;
   const q = questions[nowQuestion];
+  if (!q) return;
+  // eslint-disable-next-line @sfmc-bds/no-player-send-message -- 全服广播答题结果
   world.sendMessage(
     `§b[Baka Cirno]§r 正确答案是 §e${q.answers[0]}§r ! ${q.explanation !== undefined ? "\n  " + q.explanation : ""}`
   );
@@ -132,9 +141,32 @@ function applyBonus(pl: Player, seq: number, bonuses: Bonus[] | undefined): void
     if (b.seq !== undefined && (seq < b.seq[0] || seq > b.seq[1])) continue;
     system.run(async () => {
       switch (b.type) {
-        case "money":
-          await Money.add(pl, b.amount ?? 0);
+        case "money": {
+          const amount = b.amount ?? 0;
+          if (amount === 0) break;
+          try {
+            const result =
+              amount > 0
+                ? await economy.account.credit({
+                    playerId: pl.id,
+                    playerName: pl.name,
+                    amount: Math.abs(amount),
+                    reason: "qa_reward",
+                  })
+                : await economy.account.debit({
+                    playerId: pl.id,
+                    playerName: pl.name,
+                    amount: Math.abs(amount),
+                    reason: "qa_punish",
+                  });
+            if (typeof result.balance === "number") {
+              Money.setCached(pl, result.balance, result.version ?? 0);
+            }
+          } catch (err) {
+            debug.w("QA", `money bonus failed: ${(err as Error).message}`);
+          }
           break;
+        }
         case "item":
           pl.runCommand(
             `give @s ${b.itemType} ${b.amount ?? 1} ${b.data === undefined ? "" : b.data}`
@@ -160,6 +192,7 @@ function handleAnswer(pl: Player, str: string): number {
     return -1;
   }
   const q = questions[nowQuestion];
+  if (!q) return -2;
   for (const a of q.answers) {
     if (str === a) {
       rightAmount++;
@@ -185,11 +218,11 @@ function handleAnswer(pl: Player, str: string): number {
 }
 
 function startLoop(): void {
-  if (chatSub) return;
-  chatSub = world.beforeEvents.chatSend.subscribe((event) => {
+  if (chatCb) return;
+  chatCb = world.beforeEvents.chatSend.subscribe((event) => {
     const msg = event.message;
     if (msg.startsWith("!") || msg.startsWith("!")) {
-      const answer = msg.substring(1).replaceAll(" ");
+      const answer = msg.substring(1).replaceAll(" ", "");
       if (nowQuestion !== undefined) {
         handleAnswer(event.sender, answer);
         event.cancel = true;
@@ -202,11 +235,11 @@ function startLoop(): void {
 
 function stopLoop(): void {
   try {
-    chatSub?.unsubscribe();
+    if (chatCb) world.beforeEvents.chatSend.unsubscribe(chatCb);
   } catch {
     /* ignore */
   }
-  chatSub = undefined;
+  chatCb = undefined;
   if (timeoutId !== undefined) {
     try {
       system.clearRun(timeoutId);

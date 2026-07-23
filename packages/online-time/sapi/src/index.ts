@@ -1,5 +1,5 @@
 /**
- * @sfmc/module-online-time — v2 入口
+ * @sfmc-bds/module-online-time — v2 入口
  *
  * ModuleRegistry.register + own db table `player_onlinetime`.
  * - 20 tick 累加 session/today/month/total
@@ -8,9 +8,9 @@
  */
 
 import { Player, system, world } from "@minecraft/server";
-import { Command, debug, Msg, Permission } from "@sfmc/sdk/sapi/runtime";
-import { db } from "@sfmc/sdk/sapi/db";
-import { ModuleRegistry } from "@sfmc/sdk/module-loader";
+import { Command, debug, Msg, Permission } from "@sfmc-bds/sdk/sapi/runtime";
+import { db } from "@sfmc-bds/sdk/sapi/db";
+import { ModuleRegistry } from "@sfmc-bds/sdk/module-loader";
 
 const MODULE_ID = "feature-online-time";
 
@@ -43,19 +43,28 @@ function formatTime(seconds: number): string {
   return parts.join("");
 }
 
+interface OnlineTimeRow extends Record<string, unknown> {
+  player_id?: string;
+  today_seconds?: number;
+  month_seconds?: number;
+  total_seconds?: number;
+  last_date?: number;
+  last_month?: number;
+}
+
 async function loadPlayer(player: Player): Promise<void> {
   const id = player.id;
   if (data.has(id)) return;
-  const result = await db.get("player_onlinetime", id);
+  const row = await db.get<OnlineTimeRow>("player_onlinetime", id);
   const now = new Date();
-  if (result.ok && result.row) {
-    const lastDate = typeof result.row.last_date === "number" ? result.row.last_date : now.getDate();
-    const lastMonth = typeof result.row.last_month === "number" ? result.row.last_month : now.getMonth();
+  if (row) {
+    const lastDate = typeof row.last_date === "number" ? row.last_date : now.getDate();
+    const lastMonth = typeof row.last_month === "number" ? row.last_month : now.getMonth();
     data.set(id, {
       session: 0,
-      today: typeof result.row.today_seconds === "number" ? result.row.today_seconds : 0,
-      month: typeof result.row.month_seconds === "number" ? result.row.month_seconds : 0,
-      total: typeof result.row.total_seconds === "number" ? result.row.total_seconds : 0,
+      today: typeof row.today_seconds === "number" ? row.today_seconds : 0,
+      month: typeof row.month_seconds === "number" ? row.month_seconds : 0,
+      total: typeof row.total_seconds === "number" ? row.total_seconds : 0,
       lastDate,
       lastMonth,
       loaded: true,
@@ -153,6 +162,7 @@ ModuleRegistry.register({
         "onlinetime.see",
         async (player: Player | undefined) => {
           if (!player) {
+            // eslint-disable-next-line @sfmc-bds/no-player-send-message -- 控制台执行时无目标玩家,仅作提示
             world.sendMessage("§c该指令必须由玩家执行。");
             return;
           }

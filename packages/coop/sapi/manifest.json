@@ -1,0 +1,71 @@
+{
+  "$schema": "../../../node_modules/@sfmc-bds/sdk/schemas/sapi-manifest.v2.schema.json",
+  "schemaVersion": 2,
+  "id": "feature-coop",
+  "name": "合作社系统",
+  "type": "feature",
+  "configKey": "coop",
+  "requires": ["feature-economy"],
+  "permissions": [
+    "service:economy.account.get",
+    "db:read:sfmc_coops",
+    "db:write:sfmc_coops",
+    "db:read:sfmc_coop_members",
+    "db:write:sfmc_coop_members",
+    "db:read:sfmc_coop_invites",
+    "db:write:sfmc_coop_invites",
+    "db:read:sfmc_coop_accounts",
+    "db:write:sfmc_coop_accounts",
+    "db:read:sfmc_coop_bank_log",
+    "db:write:sfmc_coop_bank_log",
+    "db:read:sfmc_coop_shop_items",
+    "db:write:sfmc_coop_shop_items",
+    "db:read:sfmc_coop_shop_groups",
+    "db:write:sfmc_coop_shop_groups",
+    "db:read:sfmc_coop_audit_logs",
+    "db:write:sfmc_coop_audit_logs"
+  ],
+  "services": {
+    "provides": [
+      {
+        "name": "coop.byId",
+        "input": {
+          "type": "object"
+        },
+        "output": {
+          "type": "object"
+        }
+      },
+      {
+        "name": "coop.list",
+        "input": {
+          "type": "object"
+        },
+        "output": {
+          "type": "array"
+        }
+      },
+      {
+        "name": "coop.byPlayer",
+        "input": {
+          "type": "object"
+        },
+        "output": {
+          "type": "object"
+        }
+      }
+    ],
+    "requires": [
+      {
+        "name": "economy.account.get",
+        "input": {
+          "type": "object"
+        },
+        "output": {
+          "type": "object"
+        }
+      }
+    ]
+  },
+  "notes": "v2 合作社系统,合并 v1 coop + coop-gui。自有金库表 sfmc_coop_*;玩家钱包展示/缓存刷新依赖 feature-economy(SDK Money → economy.account.get)。npm 依赖 @sfmc-bds/module-economy。"
+}

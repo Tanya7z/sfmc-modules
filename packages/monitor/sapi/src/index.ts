@@ -1,5 +1,5 @@
 /**
- * @sfmc/module-monitor — v2 入口
+ * @sfmc-bds/module-monitor — v2 入口
  *
  * ModuleRegistry.register + 周期上报:
  *   - TPS (from service tps.current)
@@ -9,10 +9,10 @@
  */
 
 import { Player, system, world } from "@minecraft/server";
-import { db } from "@sfmc/sdk/sapi/db";
-import { service } from "@sfmc/sdk/sapi/service";
-import { debug } from "@sfmc/sdk/sapi/runtime";
-import { ModuleRegistry } from "@sfmc/sdk/module-loader";
+import { db } from "@sfmc-bds/sdk/sapi/db";
+import { service } from "@sfmc-bds/sdk/sapi/service";
+import { debug } from "@sfmc-bds/sdk/sapi/runtime";
+import { ModuleRegistry } from "@sfmc-bds/sdk/module-loader";
 
 const MODULE_ID = "feature-monitor";
 

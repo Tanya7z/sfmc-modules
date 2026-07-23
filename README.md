@@ -1,7 +1,3 @@
-好的，我来将这份 `sfmc-modules` 的 README 翻译成中文。
-
----
-
 # sfmc-modules
 
 SFMC v2 协议模块。为 [ScriptsForMinecraftServer](https://github.com/Shiroha7z/ScriptsForMinecraftServer) 构建的第一方模块，基于 `@sfmc/sdk`。
@@ -16,11 +12,10 @@ SFMC v2 协议模块。为 [ScriptsForMinecraftServer](https://github.com/Shiroh
 
 ## 目录结构
 
-```
+```txt
 sfmc-modules/
 ├── packages/
-│   ├── land/                       # 领地（v2 标准示例）
-│   ├── land-gui/                   # 领地 GUI 表单
+│   ├── land/                       # 领地 + GUI（v2 标准示例）
 │   ├── economy/                    # 经济系统
 │   ├── chat/  chat-gui/            # 聊天
 │   ├── coop/  coop-gui/            # 合作社
@@ -105,7 +100,7 @@ cat > packages/my-module/sapi/manifest.json <<'EOF'
 EOF
 cat > packages/my-module/package.json <<'EOF'
 {
-  "name": "@sfmc/module-my-module",
+  "name": "@sfmc-bds/module-my-module",
   "version": "0.1.0",
   "type": "module",
   "main": "sapi/src/index.ts",
@@ -147,13 +142,17 @@ ModuleRegistry.register({
 ## 开发工作流
 
 ```bash
-# 将所有模块拉取到本地行为包构建目录（主仓 scripts/ 下）
+# 同级放置主仓与本仓后：
+cd ../ScriptsForMinecraftServer && npm install && npm run sdk:build
+cd ../sfmc-modules && npm install && npm run typecheck
+
+# 联调：把模块 dir 安装进主仓再打 BP
 cd ../ScriptsForMinecraftServer
-sfmc module install land --from github:Shiroha7z/sfmc-modules@latest
-sfmc module install land-gui --from github:Shiroha7z/sfmc-modules@latest
-sfmc behavior-pack build
-sfmc behavior-pack deploy
+node tools/fetch-module.mjs install land --from dir:../sfmc-modules/packages/land
+sfmc behavior-pack build && sfmc behavior-pack deploy
 ```
+
+详见 [CONTRIBUTING.md](./CONTRIBUTING.md#本地依赖怎么装推荐)。
 
 ## 分发
 

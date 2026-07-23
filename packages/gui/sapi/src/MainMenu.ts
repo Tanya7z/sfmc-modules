@@ -1,12 +1,12 @@
 import { Player, system } from "@minecraft/server";
-import { Command } from "@sfmc/sdk/sapi/runtime";
-import { debug } from "@sfmc/sdk/sapi/runtime";
-import { Money } from "@sfmc/sdk/sapi/runtime";
-import { MenuNavigator, obsStr } from "@sfmc/sdk/sapi/runtime";
-import { ListFormInfo, Msg } from "@sfmc/sdk/sapi/runtime";
-import { service } from "@sfmc/sdk/sapi/service";
-import { ChatGUI } from "@sfmc/module-feature-chat";
-import { LandGUI } from "@sfmc/module-land-gui";
+import { Command } from "@sfmc-bds/sdk/sapi/runtime";
+import { debug } from "@sfmc-bds/sdk/sapi/runtime";
+import { Money } from "@sfmc-bds/sdk/sapi/runtime";
+import { MenuNavigator, obsStr, type Page } from "@sfmc-bds/sdk/sapi/runtime";
+import { ListFormInfo, Msg } from "@sfmc-bds/sdk/sapi/runtime";
+import { ChatGUI } from "@sfmc-bds/module-chat";
+import { LandGUI } from "@sfmc-bds/module-land";
+import { economy } from "@sfmc-bds/module-economy/client";
 
 export class MainMenu {
   static registerMenuCommand() {
@@ -32,7 +32,7 @@ export class MainMenu {
     const nav = new MenuNavigator(player);
     const balance = Money.get(player);
 
-    nav.section("main", "主菜单", (page: any) => {
+    nav.section("main", "主菜单", (page: Page) => {
       page.label(ListFormInfo([`当前余额: ${balance} ${Money.UNIT}`]));
       page.button("土地", () => nav.leave(() => LandGUI.showMainMenu(player)));
       // feature-coop 已合并 GUI 到命令面(/coop);图形 UI 待 P1 补回
@@ -46,13 +46,13 @@ export class MainMenu {
       page.button("节操", () => nav.go("economy"));
     });
 
-    nav.section("economy", "经济系统", (page: any) => {
+    nav.section("economy", "经济系统", (page: Page) => {
       const balLabel = obsStr(`§f[*] 当前余额: ${Money.get(player)} ${Money.UNIT}`);
       page.label(balLabel);
       page.button("转账", () => nav.go("transfer"));
     });
 
-    nav.section("transfer", "转账", (page: any) => {
+    nav.section("transfer", "转账", (page: Page) => {
       const status = obsStr("");
       const targetName = obsStr("");
       const amountStr = obsStr("");
@@ -78,7 +78,7 @@ export class MainMenu {
           return;
         }
         try {
-          await service.get("economy.account.transfer", {
+          await economy.account.transfer({
             fromPlayerId: player.id,
             toPlayerId: target.id,
             amount,
