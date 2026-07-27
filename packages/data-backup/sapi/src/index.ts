@@ -105,39 +105,47 @@ async function upsertPlayer(row: Record<string, unknown>): Promise<void> {
 }
 
 async function saveAllPlayers(): Promise<void> {
-  const tasks: Array<Promise<void>> = [];
-  for (const player of world.getAllPlayers()) {
-    tasks.push(upsertPlayer(snapshotPlayer(player)));
+  try {
+    const tasks: Array<Promise<void>> = [];
+    for (const player of world.getAllPlayers()) {
+      tasks.push(upsertPlayer(snapshotPlayer(player)));
+    }
+    await Promise.all(tasks);
+  } catch (err) {
+    debug.e("DATA", "saveAllPlayers failed", err instanceof Error ? err : new Error(String(err)));
   }
-  await Promise.all(tasks);
 }
 
 async function saveWorld(): Promise<void> {
-  const now = getShanghaiTime();
-  const row = {
-    id: "singleton",
-    seed: String(world.seed),
-    spawn_x: world.getDefaultSpawnLocation().x,
-    spawn_y: world.getDefaultSpawnLocation().y,
-    spawn_z: world.getDefaultSpawnLocation().z,
-    game_difficulty: String(world.getDifficulty()),
-    allow_cheats: world.allowCheats,
-    game_rules: serializeGameRules(),
-    ticking_areas_count: world.tickingAreaManager.chunkCount,
-    structures_from_addon: world.structureManager.getPackStructureIds().toString(),
-    structures_from_world: world.structureManager.getWorldStructureIds().toString(),
-    moon_phase: world.getMoonPhase(),
-    dynamic_property_total_byte_count: world.getDynamicPropertyTotalByteCount(),
-    updated_at: `${now.date} ${now.time}`,
-  };
-  await db.tx(async (tx) => {
-    const existing = await tx.get("sfmc_world", "singleton");
-    if (existing) {
-      await tx.update("sfmc_world", "singleton", row);
-    } else {
-      await tx.insert("sfmc_world", row);
-    }
-  });
+  try {
+    const now = getShanghaiTime();
+    const row = {
+      id: "singleton",
+      seed: String(world.seed),
+      spawn_x: world.getDefaultSpawnLocation().x,
+      spawn_y: world.getDefaultSpawnLocation().y,
+      spawn_z: world.getDefaultSpawnLocation().z,
+      game_difficulty: String(world.getDifficulty()),
+      allow_cheats: world.allowCheats,
+      game_rules: serializeGameRules(),
+      ticking_areas_count: world.tickingAreaManager.chunkCount,
+      structures_from_addon: world.structureManager.getPackStructureIds().toString(),
+      structures_from_world: world.structureManager.getWorldStructureIds().toString(),
+      moon_phase: world.getMoonPhase(),
+      dynamic_property_total_byte_count: world.getDynamicPropertyTotalByteCount(),
+      updated_at: `${now.date} ${now.time}`,
+    };
+    await db.tx(async (tx) => {
+      const existing = await tx.get("sfmc_world", "singleton");
+      if (existing) {
+        await tx.update("sfmc_world", "singleton", row);
+      } else {
+        await tx.insert("sfmc_world", row);
+      }
+    });
+  } catch (err) {
+    debug.e("DATA", "saveWorld failed", err instanceof Error ? err : new Error(String(err)));
+  }
 }
 
 /** playerSpawn 订阅回调(SAPI 退订需传同一回调) */
@@ -154,7 +162,9 @@ ModuleRegistry.register({
     async init() {
       playerSpawnCb = (event) => {
         if (event.initialSpawn) {
-          void upsertPlayer(snapshotPlayer(event.player));
+          void upsertPlayer(snapshotPlayer(event.player)).catch((err) =>
+            debug.e("DATA", "playerSpawn upsert failed", err instanceof Error ? err : new Error(String(err))),
+          );
         }
       };
       world.afterEvents.playerSpawn.subscribe(playerSpawnCb);

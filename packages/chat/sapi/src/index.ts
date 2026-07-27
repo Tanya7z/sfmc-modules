@@ -10,6 +10,7 @@
  *   doge-chat   — 消息/频道/红包业务
  *   chat-api    — db.tx / db.query 包装(平台 bootstrap 表)
  *   chat-gui    — MenuNavigator UI
+ *   chat-format / chat-avatar — 头像 glyph 前缀
  */
 
 import { ModuleRegistry } from "@sfmc-bds/sdk/module-loader";
@@ -47,3 +48,10 @@ export { ChatGUI } from "./chat-gui.js";
 export { DogeChat } from "./doge-chat.js";
 export { ChatSystem } from "./chat-system.js";
 export * as ChatApi from "./chat-api.js";
+export { formatChatLine, decorateMessageContent } from "./chat-format.js";
+export {
+  ensureAvatarSlot,
+  getAvatarGlyph,
+  DEFAULT_AVATAR_GLYPH,
+  initAvatarTable,
+} from "./chat-avatar.js";

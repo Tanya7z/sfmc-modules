@@ -78,7 +78,7 @@ async function report(): Promise<void> {
       }
     });
   } catch (e) {
-    debug.w("Monitor", `report failed: ${(e as Error).message}`);
+    debug.e("Monitor", "report failed", e instanceof Error ? e : new Error(String(e)));
   }
 }
 

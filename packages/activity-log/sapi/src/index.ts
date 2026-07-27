@@ -242,9 +242,10 @@ async function flush(): Promise<void> {
       }
     });
   } catch (err) {
-    debug.w(
+    debug.e(
       "ActivityLog",
-      `flush failed (${batch.length} entries retained): ${(err as Error).message}`,
+      `flush failed (${batch.length} entries retained)`,
+      err instanceof Error ? err : new Error(String(err)),
     );
     queue = batch.concat(queue);
   }
@@ -262,7 +263,7 @@ async function doCleanup(): Promise<void> {
       for (const row of old) await tx.delete("sfmc_activities", row.id);
     });
   } catch (err) {
-    debug.w("ActivityLog", `cleanup failed: ${(err as Error).message}`);
+    debug.e("ActivityLog", "cleanup failed", err instanceof Error ? err : new Error(String(err)));
   }
 }
 

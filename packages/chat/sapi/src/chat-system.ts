@@ -5,6 +5,7 @@ import { db } from "@sfmc-bds/sdk/sapi/db";
 
 import { ChatGUI } from "./chat-gui.js";
 import { DogeChat } from "./doge-chat.js";
+import { ensureAvatarSlot, initAvatarTable, warmAvatarCache } from "./chat-avatar.js";
 
 export class ChatSystem {
   // SAPI 的 event.subscribe 返回回调本身，退订需 event.unsubscribe(cb)
@@ -13,13 +14,23 @@ export class ChatSystem {
 
   static init() {
     debug.i("CHAT", "init");
-    void DogeChat.ensureDefaultChannels();
+    void (async () => {
+      try {
+        await initAvatarTable();
+      } catch (err) {
+        debug.e("CHAT", "initAvatarTable failed", err instanceof Error ? err : new Error(String(err)));
+      }
+      await DogeChat.ensureDefaultChannels();
+      for (const p of world.getAllPlayers()) {
+        void warmAvatarCache(p);
+      }
+    })();
 
     // 用一次轻量 query 探测 db 可达,替代 HttpDB.checkHealth
     void db
       .query("sfmc_chat_channels", { limit: 1 })
       .then(() => console.info("[DogeChat] 外部数据库已连接，消息将持久化存储。"))
-      .catch(() => console.warn("[DogeChat] 外部数据库未连接。"));
+      .catch((err) => debug.e("CHAT", "外部数据库未连接", err instanceof Error ? err : new Error(String(err))));
 
     registerSystemMsgHandler((player: Player, text: string) => {
       DogeChat.sendSystemMessage(player, text);
@@ -48,6 +59,7 @@ export class ChatSystem {
     ChatSystem.playerJoinCb = world.afterEvents.playerJoin.subscribe((event) => {
       const player = world.getEntity(event.playerId) as Player;
       system.run(async () => {
+        await ensureAvatarSlot(player);
         await DogeChat.loadSubscriptions(player);
         const channel = await DogeChat.getActiveChannel(player);
         if (channel) await DogeChat.loadChannelHistory(player, channel.id);

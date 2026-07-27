@@ -163,7 +163,7 @@ function applyBonus(pl: Player, seq: number, bonuses: Bonus[] | undefined): void
               Money.setCached(pl, result.balance, result.version ?? 0);
             }
           } catch (err) {
-            debug.w("QA", `money bonus failed: ${(err as Error).message}`);
+            debug.e("QA", "money bonus failed", err instanceof Error ? err : new Error(String(err)));
           }
           break;
         }
@@ -274,7 +274,7 @@ ModuleRegistry.register({
       qa_interval_max = cfg.qa_interval_max ?? 720;
       qa_timeout = cfg.qa_timeout ?? 60;
       if (questions.length === 0) {
-        debug.e("QA", "configs/qa.json missing or empty — module disabled");
+        debug.e("QA", "configs/qa.json missing or empty — module disabled", new Error("config_missing"));
         return;
       }
       startLoop();

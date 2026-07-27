@@ -97,7 +97,7 @@ async function flushAll(): Promise<void> {
           last_month: s.lastMonth,
           updated_at: now.getTime(),
         })
-        .catch((e) => debug.e("ONLINE", `flush ${id}: ${(e as Error).message}`))
+        .catch((e) => debug.e("ONLINE", `flush ${id}`, e instanceof Error ? e : new Error(String(e))))
     );
   }
   await Promise.all(writes);

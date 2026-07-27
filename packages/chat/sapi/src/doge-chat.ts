@@ -12,11 +12,10 @@ import { Permission } from "@sfmc-bds/sdk/sapi/runtime";
 import { Msg, formatTimestamp, generateId } from "@sfmc-bds/sdk/sapi/runtime";
 import * as ChatApi from "./chat-api.js";
 import type { Channel, ChannelConfig, ChatMessage, MessageType, RedPacket } from "./chat-api.js";
+import { decorateMessageContent, formatChatLine } from "./chat-format.js";
+import { getAvatarGlyph, getAvatarGlyphById } from "./chat-avatar.js";
 
 export type { Channel, ChannelConfig, ChatMessage, MessageType, RedPacket };
-
-/** 玩家可选挂载的聊天名前缀（供客户端/桥接读取） */
-type PlayerWithChatPrefix = Player & { chatNamePrefix?: string };
 
 type ChatRawPayload = Parameters<Player["sendMessage"]>[0];
 
@@ -98,7 +97,7 @@ export class DogeChat {
         continue;
       }
       const ok = await ChatApi.saveChannels(DogeChat.DEFAULT_CHANNELS).catch((err) => {
-        debug.e("CHAT", `ensureDefaultChannels: save failed: ${err}`);
+        debug.e("CHAT", "ensureDefaultChannels: save failed", err instanceof Error ? err : new Error(String(err)));
         return false;
       });
       if (ok) {
@@ -231,7 +230,7 @@ export class DogeChat {
         await tx.update("sfmc_players", rowId, dbPatch);
       });
     } catch (e) {
-      console.warn("[DogeChat] persist chat prefs failed:", e);
+      debug.e("CHAT", "persist chat prefs failed", e instanceof Error ? e : new Error(String(e)));
     }
   }
 
@@ -349,7 +348,7 @@ export class DogeChat {
       createdAt: Date.now(),
       config: { ...DogeChat.DEFAULT_CHANNEL_CONFIG, allowChat: false },
     };
-    await ChatApi.createChannel(channel).catch((e) => console.warn("[DogeChat] error:", e));
+    await ChatApi.createChannel(channel).catch((e) => debug.e("CHAT", "createChannel failed", e instanceof Error ? e : new Error(String(e))));
     return channel;
   }
 
@@ -365,7 +364,7 @@ export class DogeChat {
       timestamp: Date.now(),
       showTimestamp: true,
     };
-    ChatApi.saveMessages([msg]).catch((err) => console.warn(`[DogeChat] 保存消息失败: ${err}`));
+    ChatApi.saveMessages([msg]).catch((err) => debug.e("CHAT", "保存消息失败", err instanceof Error ? err : new Error(String(err))));
   }
 
   static isPrivateParticipant(channelId: string, playerId: string): boolean {
@@ -424,19 +423,21 @@ export class DogeChat {
       if (msg.showTimestamp && !isBroadcast) {
         sendChatRaw(player, `§7${formatTimestamp(msg.timestamp)}`);
       }
-      let display = msg.content;
-      switch (msg.type) {
-        case "location":
-          display = `§a[定位] ${display}`;
-          break;
-        case "teleport_invite":
-          display = `§e[传送邀请] ${display}`;
-          break;
-        case "redpacket":
-          display = `§6[红包] ${display}`;
-          break;
-      }
-      sendChatRaw(player, { rawtext: [{ text: `§b[${channel.prefix}] §f${msg.fromName}: ${display}` }] });
+      const display = decorateMessageContent(msg.type, msg.content);
+      const glyph = getAvatarGlyphById(msg.fromid);
+      sendChatRaw(player, {
+        rawtext: [
+          {
+            text: formatChatLine({
+              glyph,
+              channelPrefix: channel.prefix,
+              name: msg.fromName,
+              content: display,
+              style: "channel",
+            }),
+          },
+        ],
+      });
     }
     sendChatRaw(player, `§7--- 以上为历史消息，共 ${history.length} 条 ---`);
     sendChatRaw(player, "§7!lo §8发送定位 §7| !tp §8传送邀请 §7| !hb §8发送红包");
@@ -481,8 +482,20 @@ export class DogeChat {
         timestamp: Date.now(),
         showTimestamp: true,
       };
-      await ChatApi.saveMessages([msg]).catch((err) => console.warn(`[DogeChat] 保存消息失败: ${err}`));
-      sendChatRaw(from, { rawtext: [{ text: `§a[${channel.prefix}] ${from.name}: ${content}` }] });
+      await ChatApi.saveMessages([msg]).catch((err) => debug.e("CHAT", "保存消息失败", err instanceof Error ? err : new Error(String(err))));
+      sendChatRaw(from, {
+        rawtext: [
+          {
+            text: formatChatLine({
+              glyph: getAvatarGlyph(from.id),
+              channelPrefix: channel.prefix,
+              name: from.name,
+              content,
+              style: "broadcast",
+            }),
+          },
+        ],
+      });
       return true;
     }
 
@@ -514,9 +527,21 @@ export class DogeChat {
       timestamp: Date.now(),
       showTimestamp,
     };
-    ChatApi.saveMessages([msg]).catch((err) => console.warn(`[DogeChat] 保存消息失败: ${err}`));
+    ChatApi.saveMessages([msg]).catch((err) => debug.e("CHAT", "保存消息失败", err instanceof Error ? err : new Error(String(err))));
     if (showTimestamp) sendChatRaw(from, `§7${formatTimestamp(msg.timestamp)}`);
-    sendChatRaw(from, { rawtext: [{ text: `§b[${channel.prefix}] §f${from.name}: ${content}` }] });
+    sendChatRaw(from, {
+      rawtext: [
+        {
+          text: formatChatLine({
+            glyph: getAvatarGlyph(from.id),
+            channelPrefix: channel.prefix,
+            name: from.name,
+            content,
+            style: "channel",
+          }),
+        },
+      ],
+    });
 
     this._broadcastToSubscribers(channel, msg, showTimestamp, from.id);
 
@@ -538,21 +563,21 @@ export class DogeChat {
     for (const p of world.getPlayers()) {
       if (p.id === excludeId) continue;
       if (!this.isSubscribed(p.id, channel.id)) continue;
-      let display = msg.content;
-      switch (msg.type) {
-        case "location":
-          display = `§a[定位] ${display}`;
-          break;
-        case "teleport_invite":
-          display = `§e[传送邀请] ${display}`;
-          break;
-        case "redpacket":
-          display = `§6[红包] ${display}`;
-          break;
-      }
+      const display = decorateMessageContent(msg.type, msg.content);
       if (showTimestamp && !isBroadcast) sendChatRaw(p, `§7${formatTimestamp(msg.timestamp)}`);
-      (p as PlayerWithChatPrefix).chatNamePrefix = `[${channel.prefix}]`;
-      sendChatRaw(p, `${display}`);
+      sendChatRaw(p, {
+        rawtext: [
+          {
+            text: formatChatLine({
+              glyph: getAvatarGlyphById(msg.fromid),
+              channelPrefix: channel.prefix,
+              name: msg.fromName,
+              content: display,
+              style: "channel",
+            }),
+          },
+        ],
+      });
     }
   }
 
@@ -577,25 +602,27 @@ export class DogeChat {
       timestamp: Date.now(),
       showTimestamp,
     };
-    ChatApi.saveMessages([msg]).catch((err) => console.warn(`[DogeChat] 保存消息失败: ${err}`));
+    ChatApi.saveMessages([msg]).catch((err) => debug.e("CHAT", "保存消息失败", err instanceof Error ? err : new Error(String(err))));
 
     for (const p of [from, toPlayer]) {
       if (this.isSubscribed(p.id, channel.id)) {
-        let display = content;
-        switch (type) {
-          case "location":
-            display = `§a[定位] ${display}`;
-            break;
-          case "teleport_invite":
-            display = `§e[传送邀请] ${display}`;
-            break;
-          case "redpacket":
-            display = `§6[红包] ${display}`;
-            break;
-        }
+        const display = decorateMessageContent(type, content);
         if (showTimestamp) sendChatRaw(p, `§7${formatTimestamp(msg.timestamp)}`);
         const sender = p.id === from.id ? toPlayer.name : from.name;
-        sendChatRaw(p, { rawtext: [{ text: `§d[私信] §f${sender}: ${display}` }] });
+        const senderId = p.id === from.id ? toPlayer.id : from.id;
+        sendChatRaw(p, {
+          rawtext: [
+            {
+              text: formatChatLine({
+                glyph: getAvatarGlyph(senderId),
+                channelPrefix: channel.prefix,
+                name: sender,
+                content: display,
+                style: "private",
+              }),
+            },
+          ],
+        });
       } else if (p.id !== from.id) {
         Msg.info(`§b${from.name} 发来一条私信。使用 !channel 切换到私聊频道查看。`, p);
       }
@@ -618,7 +645,7 @@ export class DogeChat {
       createdAt: Date.now(),
       config: { ...DogeChat.DEFAULT_CHANNEL_CONFIG },
     };
-    await ChatApi.createChannel(channel).catch((e) => console.warn("[DogeChat] error:", e));
+    await ChatApi.createChannel(channel).catch((e) => debug.e("CHAT", "createChannel failed", e instanceof Error ? e : new Error(String(e))));
     return channel;
   }
 
@@ -693,7 +720,7 @@ export class DogeChat {
         content: `发送了 ${amount} ${Money.UNIT} 的红包（共 ${count} 份）`,
         timestamp: Date.now(),
       },
-    ]).catch((err) => console.warn(`[DogeChat] 保存消息失败: ${err}`));
+    ]).catch((err) => debug.e("CHAT", "保存消息失败", err instanceof Error ? err : new Error(String(err))));
     return true;
   }
 
@@ -784,7 +811,19 @@ export class DogeChat {
                 this._lastBridgeTimestamp = msg.timestamp;
                 sendChatRaw(p, `§7${formatTimestamp(msg.timestamp)}`);
               }
-              sendChatRaw(p, { rawtext: [{ text: `§b[${channel.prefix}] §f${msg.fromName}: §r${msg.content}` }] });
+              sendChatRaw(p, {
+                rawtext: [
+                  {
+                    text: formatChatLine({
+                      glyph: getAvatarGlyphById(msg.fromid),
+                      channelPrefix: channel.prefix,
+                      name: msg.fromName,
+                      content: `§r${msg.content}`,
+                      style: "channel",
+                    }),
+                  },
+                ],
+              });
             }
           }
         }

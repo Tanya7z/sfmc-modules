@@ -109,10 +109,10 @@ async function _typeGood(item: ItemStack): Promise<string[]> {
 export async function registerCoop(name: string, cid: string, player: Player): Promise<boolean> {
   const result = await CoopApi.createCoop(name.trim(), cid.trim(), player.id, player.name);
   if (!result.ok) {
-    debug.w("COOP", `registerCoop: failed name=${name} cid=${cid}`);
+    debug.e("COOP", `registerCoop: failed name=${name} cid=${cid}`, new Error(result.error ?? "registerCoop failed"));
     return false;
   }
-  Money.load(player).catch(() => {});
+  Money.load(player).catch((err) => debug.e("COOP", "Money.load failed", err instanceof Error ? err : new Error(String(err))));
   return true;
 }
 
@@ -283,7 +283,8 @@ export async function buy(gid: string, num: number, player: Player): Promise<{ o
   if (!result.ok) return { ok: false, ...(result.error !== undefined ? { error: result.error } : {}) };
   try {
     player.runCommand(`give @s ${good.item_type} ${num} ${good.item_aux ?? 0}`);
-  } catch {
+  } catch (err) {
+    debug.e("COOP", `buy give failed gid=${gid}`, err instanceof Error ? err : new Error(String(err)));
     Msg.error("物品发放失败,请联系管理员。", player);
     return { ok: false, error: "give_failed" };
   }
@@ -299,7 +300,8 @@ export async function sell(gid: string, num: number, player: Player): Promise<{ 
   if (has < num) return { ok: false, error: "背包物品不足" };
   try {
     player.runCommand(`clear @s ${good.item_type} ${good.item_aux ?? 0} ${num}`);
-  } catch {
+  } catch (err) {
+    debug.e("COOP", `sell clear failed gid=${gid}`, err instanceof Error ? err : new Error(String(err)));
     Msg.error("从背包扣除物品失败。", player);
     return { ok: false, error: "clear_failed" };
   }

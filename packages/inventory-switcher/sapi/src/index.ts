@@ -197,7 +197,7 @@ ModuleRegistry.register({
     async init() {
       const cfg = (await config.get<InventorySwitcherConfig>("inventory_switcher")) ?? {};
       if (!cfg.grid) {
-        debug.e("InventorySwitcher", "configs/inventory_switcher.json missing or invalid grid — module disabled");
+        debug.e("InventorySwitcher", "configs/inventory_switcher.json missing or invalid grid — module disabled", new Error("config_missing"));
         return;
       }
       grid = cfg.grid;

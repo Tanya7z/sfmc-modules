@@ -60,7 +60,7 @@ async function publishMonthlyReport(): Promise<void> {
       Msg.info(msg, p);
     }
   } catch (err) {
-    debug.w("Economy", `monthly report failed: ${(err as Error).message}`);
+    debug.e("Economy", "monthly report failed", err instanceof Error ? err : new Error(String(err)));
   }
 }
 

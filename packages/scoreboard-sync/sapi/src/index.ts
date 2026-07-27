@@ -70,7 +70,7 @@ async function restoreFromDb(): Promise<{ success: number; fail: number }> {
       try {
         objective = world.scoreboard.addObjective(objId, objEntries[0]?.objective_display || objId);
       } catch (err) {
-        console.warn(`[ScoreboardSync] cannot create objective "${objId}": ${err}`);
+        debug.e("ScoreboardSync", `cannot create objective "${objId}"`, err instanceof Error ? err : new Error(String(err)));
         fail += objEntries.length;
         continue;
       }
@@ -111,9 +111,15 @@ ModuleRegistry.register({
         await backupWorldScoreboards();
         console.info("[ScoreboardSync] initial backup complete");
       } catch (err) {
-        console.warn(`[ScoreboardSync] initial backup failed: ${(err as Error).message}`);
+        debug.e("ScoreboardSync", "initial backup failed", err instanceof Error ? err : new Error(String(err)));
       }
-      backupTimer = system.runInterval(() => void backupWorldScoreboards(), 6000);
+      backupTimer = system.runInterval(
+        () =>
+          void backupWorldScoreboards().catch((err) =>
+            debug.e("ScoreboardSync", "periodic backup failed", err instanceof Error ? err : new Error(String(err))),
+          ),
+        6000,
+      );
       debug.i("ScoreboardSync", "init");
     },
     registerCommands() {

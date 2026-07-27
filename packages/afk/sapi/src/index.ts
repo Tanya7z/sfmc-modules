@@ -143,7 +143,7 @@ ModuleRegistry.register({
       const cfg = await config.get<AfkConfig>("afk");
       const safe: AfkConfig = cfg ?? { afk_time: 120, step_time: 15 };
       if (!cfg) {
-        debug.e("AFK", "configs/afk.json missing — using built-in defaults {afk_time:120, step_time:15}");
+        debug.e("AFK", "configs/afk.json missing — using built-in defaults {afk_time:120, step_time:15}", new Error("config_missing"));
       }
 
       config.onChange((key, value) => {

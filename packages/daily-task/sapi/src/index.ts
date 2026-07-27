@@ -17,7 +17,7 @@ async function listTasks(): Promise<DailyTaskRow[]> {
     const env = await economy.dailyTasks.list();
     return env?.tasks ?? [];
   } catch (err) {
-    debug.w("DailyTask", `list failed: ${(err as Error).message}`);
+    debug.e("DailyTask", "list failed", err instanceof Error ? err : new Error(String(err)));
     return [];
   }
 }
