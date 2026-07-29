@@ -1,7 +1,7 @@
 {
-  "_comment": "first-party registry index — fetched by tools/fetch-module.mjs。schema: modules.<packageFolder> → { repo, tag }。id 与 packages/<folder> 同名(afk 而非 feature-afk)。",
-  "version": 1,
-  "generatedAt": "2026-07-23T09:13:18.797Z",
+  "_comment": "SFMC discovery index v2. Prefer modules.<id>={npm,version,sdk}. Legacy {repo,tag} is deprecated. Source archive: branch archive/monorepo-packages.",
+  "version": 2,
+  "generatedAt": "2026-07-29T13:14:45.765Z",
   "modules": {
     "activity-log": {
       "repo": "Tanya7z/sfmc-modules",
