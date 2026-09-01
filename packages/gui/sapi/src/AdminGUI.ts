@@ -59,9 +59,8 @@ export class AdminGUI {
       Msg.error(`${name} 修改失败`, this.player);
       return;
     }
-    await ConfigManager.refreshModules();
     AdminGUI.applyRuntimeState(name, val);
-    Msg.success(`${name} 已${val ? "启用" : "禁用"}`, this.player);
+    Msg.success(`${name} 已记录为${val ? "启用" : "禁用"}（重启 BDS 后生效）`, this.player);
   }
 
   private static applyRuntimeState(name: string, enabled: boolean): void {
