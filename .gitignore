@@ -1,4 +1,5 @@
 node_modules/
+.registry-test-*/
 *.log
 dist/
 .DS_Store

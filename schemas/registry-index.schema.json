@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sfmc.dev/schemas/registry-index.schema.json",
+  "title": "SFMC registry index v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "generatedAt",
+    "modules"
+  ],
+  "properties": {
+    "version": {
+      "const": 2
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "modules": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+      },
+      "additionalProperties": {
+        "$ref": "registry-module.schema.json"
+      }
+    }
+  }
+}

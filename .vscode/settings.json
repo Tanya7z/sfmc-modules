@@ -1,8 +1,12 @@
 {
   "json.schemas": [
     {
-      "fileMatch": ["**/sapi/manifest.json"],
-      "url": "./node_modules/@sfmc-bds/sdk/schemas/sapi-manifest.v2.schema.json"
+      "fileMatch": ["/modules/*.json"],
+      "url": "./schemas/registry-module.schema.json"
+    },
+    {
+      "fileMatch": ["/index.json"],
+      "url": "./schemas/registry-index.schema.json"
     }
   ]
 }

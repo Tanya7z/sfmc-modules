@@ -1,194 +1,106 @@
-# sfmc-modules
+# SFMC 模块中心索引库
 
-SFMC v2 协议模块。为 [ScriptsForMinecraftServer](https://github.com/Shiroha7z/ScriptsForMinecraftServer) 构建的第一方模块，基于 `@sfmc/sdk`。
+[English](README.en.md) · [贡献指南](CONTRIBUTING.md)
 
-每个 `packages/<id>/` 下的模块包含：
+本仓库是 ScriptsForMinecraftServer（SFMC）的纯元数据索引中心（Pure Registry Index Hub）。模块业务代码在各自独立仓维护，安装包通过 npm 分发；本仓库只维护发现、版本与兼容性元数据，以及索引构建工具。
 
-- `sapi/manifest.json` — v2 协议声明（`schemaVersion: 2`）
-- `sapi/src/index.ts` — SAPI 入口点（`ModuleRegistry.register({...})`）
-- `package.json` — 依赖 `@sfmc/sdk`
-- 可选 `configs-default/` — 初始 `configs/<configKey>.json` 默认配置
-- 可选 `resource_pack/` — 与行为包打包在一起的资源文件
+采用 Homebrew-core 式的独立条目贡献与 Cargo Index 式的集中发现思路：`modules/<id>.json` 是唯一编辑来源，根目录 `index.json` 是供现行 CLI 获取的聚合产物。不同模块的 PR 可独立修改分片，合并后由 Actions 更新聚合文件。
 
-## 目录结构
+## 搜索与安装
 
-```txt
-sfmc-modules/
-├── packages/
-│   ├── land/                       # 领地 + GUI（v2 标准示例）
-│   ├── economy/                    # 经济系统
-│   ├── chat/  chat-gui/            # 聊天
-│   ├── coop/  coop-gui/            # 合作社
-│   ├── fly/                        # 区域飞行
-│   ├── afk/                        # 挂机判定
-│   ├── peace/                      # 和平区域
-│   ├── spawn-protect/              # 重生保护
-│   ├── clean/                      # 地面掉落清理
-│   ├── qa/                         # 问答
-│   ├── tps/                        # TPS 监控
-│   ├── chat-sounds/                # 聊天音效
-│   ├── daily-task/                 # 每日任务
-│   ├── online-time/                # 在线时长
-│   ├── monitor/                    # 服务器监控
-│   ├── activity-log/               # 行为日志
-│   ├── scoreboard-sync/            # 计分板快照
-│   ├── inventory-switcher/         # 背包切换
-│   ├── creative/                   # 创造区域
-│   ├── survival/                   # 生存区域
-│   ├── data-backup/                # 数据备份
-│   ├── gui/                        # 主菜单 GUI
-│   └── ...
-├── index.json                      # 模块目录镜像
-├── tools/
-│   ├── check-modules.js            # 校验所有 manifest.json 是否合法
-│   └── build.js                    # 批量 esbuild 到 ./build/
-├── .github/workflows/ci.yml
-├── README.md
-├── CONTRIBUTING.md
-└── LICENSE
+在已安装 SFMC CLI 的环境中执行：
+
+```bash
+sfmc mod search
+sfmc mod install afk
+sfmc mod install <id>
 ```
 
-## 模块契约（v2）
+CLI 从 [main/index.json](https://raw.githubusercontent.com/Tanya7z/sfmc-modules/main/index.json) 发现模块，读取 `npm`、`version`、`sdk` 并优先使用 npm 安装。依赖和启用行为由现行 CLI 与模块运行时契约负责，索引本身不执行模块代码。
 
-每个模块必须包含 `sapi/manifest.json`：
+**初始化发布状态（2026-09-05）：** 以下 19 个清单的版本 `0.2.0`、SDK 范围 `>=0.2.0` 与 ISC 许可证均核对自独立模块仓。初始化时公共 npm 源对这些包均返回 HTTP 404；清单已就绪，但尚不能据此宣称可从公共 npm 安装。维护者须完成公开发布并运行联网校验后更新此说明。未能核实的仓库 URL 与作者字段暂不填写。
+
+## 官方模块（19）
+
+所有官方包名均为 `@sfmc-bds/module-<id>`。
+
+| ID / 清单 | 名称 | 分类 | 功能概览 | requires |
+| --- | --- | --- | --- | --- |
+| [activity-log](modules/activity-log.json) | 行为日志 | system | 全服原生事件监听与审计日志摄入/多维检索插槽 | — |
+| [afk](modules/afk.json) | 挂机检测 | utility | 纯内存位移挂机判定与原版 Tag 豁免 | — |
+| [area](modules/area.json) | 空间微内核 | system | 空间微内核与 AABB 区域特性调度引擎 | — |
+| [chat-sounds](modules/chat-sounds.json) | 聊天关键字音效 | social | 聊天关键词全服原声音效与冷却防刷 | chat |
+| [chat](modules/chat.json) | 聊天管道 | social | 独占原生聊天流管道，提供拦截器与广播/私聊服务 | economy |
+| [clean](modules/clean.json) | 掉落物清理 | utility | 区域与全服掉落物预警、倒计时广播与物理回收箱清理 | area |
+| [coop](modules/coop.json) | 合作社 | social | 合作社组织治理与公账划转托管 | economy, activity-log |
+| [data-backup](modules/data-backup.json) | 数据灾备 | system | 世界种子/规则与全服计分板快照灾备（排除 sfmc_money） | — |
+| [economy](modules/economy.json) | 经济系统 | economy | 计分板权威余额 + DB 流水留档 + 两阶段转账中枢 | — |
+| [fly-area](modules/fly-area.json) | 区域飞行 | gameplay | 空间进出自动飞行能力赋权与剥离缓降 | area |
+| [gamemode-area](modules/gamemode-area.json) | 区域游戏模式 | gameplay | 区域游戏模式切换与背包隔离置换 | area, inventory-switcher |
+| [gui](modules/gui.json) | 交互导航 | system | 微内核数据驱动 UI 引擎与 MenuNavigator SPA 路由 | — |
+| [inventory-switcher](modules/inventory-switcher.json) | 背包切换 | system | 通用背包多槽位快照持久化与原子置换服务 | — |
+| [land](modules/land.json) | 领地庄园 | gameplay | 现代地产租赁契约（只租不卖）+ 原版三维高亮线框 + 商业门票造血 | economy, activity-log |
+| [monitor](modules/monitor.json) | 运行时监控 | system | TPS 逐刻采样环与全服综合负载宏观时序监控 | — |
+| [online-time](modules/online-time.json) | 在线时长统计 | utility | 进服打点与心跳增量结转在线统计与多维排行榜 | — |
+| [peace-area](modules/peace-area.json) | 和平区域 | gameplay | 区域怪物生成拦截与和平空间保护（友好生物豁免） | area |
+| [qa](modules/qa.json) | 知识竞答 | gameplay | 知识竞答加权出题、聊天快捷作答与经济奖惩结算 | economy, chat |
+| [spawn-protect](modules/spawn-protect.json) | 出生保护 | utility | 玩家进服与重生 60 ticks 高阶抗性保护 | — |
+
+旧版 `tps` 与 `scoreboard-sync` 已整合或废弃，不纳入索引；`daily-task` 保持 deferred，暂不收录。
+
+## 仓库结构与本地命令
+
+```text
+modules/<id>.json                    单模块元数据（PR 编辑入口）
+schemas/registry-module.schema.json  严格的单模块契约
+schemas/registry-index.schema.json   v2 聚合契约
+tools/verify.mjs                    Schema、依赖与可选 npm 校验
+tools/build-index.mjs               排序聚合与原子写入
+index.json                         自动生成、随仓库发布的 CLI 入口
+test/registry.test.mjs              隔离目录中的工具回归测试
+.github/workflows/                  PR 门禁与主分支自动发布
+```
+
+需要 Node.js >= 22.13.0。只安装 Ajv、日期格式与 semver 校验工具，无 workspace 或本地 SDK 依赖。
+
+```bash
+npm ci
+npm run verify
+npm test
+npm run verify -- --network
+npm run build
+node --test
+```
+
+`verify` 验证分片和待生成的索引，允许 PR 中已发布的 `index.json` 暂时落后。`--network` 额外检查公共 npm 上包名与精确版本；每个请求超时 15 秒，最多并发 4 个，不下载或执行模块。
+
+构建先校验再按 ID 排序，格式化后原子替换 `index.json`；失败不会破坏已发布索引。元数据无变化时保留 `generatedAt`，重复构建得到相同字节。聚合格式为：
 
 ```json
 {
-  "schemaVersion": 2,
-  "id": "feature-land",
-  "name": "领地系统",
-  "type": "feature",
-  "configKey": "land",
-  "requires": ["feature-economy"],
-  "permissions": [
-    "db:read:lands",
-    "db:write:lands",
-    "config:read:land",
-    "config:write:land",
-    "service:economy.account"
-  ],
-  "services": {
-    "provides": [
-      { "name": "land.byOwner", "input": {...}, "output": {...} }
-    ],
-    "requires": [
-      { "name": "economy.account" }
-    ]
-  },
-  "notes": "..."
-}
-```
-
-包含 `routes` / `tables` / `migrations` / `handlers` 的 v1 清单会在平台启动时被拒绝。
-
-## 模块作者快速入门
-
-```bash
-mkdir -p packages/my-module/sapi/src
-cat > packages/my-module/sapi/manifest.json <<'EOF'
-{
-  "schemaVersion": 2,
-  "id": "feature-my-module",
-  "name": "My Module",
-  "type": "feature",
-  "configKey": "my_module",
-  "requires": [],
-  "permissions": ["db:read:my_table", "db:write:my_table", "config:read:my_module"],
-  "services": { "provides": [], "requires": [] },
-  "notes": ""
-}
-EOF
-cat > packages/my-module/package.json <<'EOF'
-{
-  "name": "@sfmc-bds/module-my-module",
-  "version": "0.1.0",
-  "type": "module",
-  "main": "sapi/src/index.ts",
-  "private": true,
-  "dependencies": {
-    "@sfmc/sdk": "^0.1.0"
-  },
-  "peerDependencies": {
-    "@minecraft/server": "2.10.0-beta.1.26.40-preview.30"
+  "version": 2,
+  "generatedAt": "2026-09-05T00:00:00.000Z",
+  "modules": {
+    "afk": {
+      "id": "afk",
+      "name": "挂机检测",
+      "description": "纯内存位移挂机判定与原版 Tag 豁免",
+      "version": "0.2.0",
+      "npm": "@sfmc-bds/module-afk",
+      "sdk": ">=0.2.0",
+      "license": "ISC",
+      "official": true,
+      "category": "utility",
+      "requires": []
+    }
   }
 }
-EOF
 ```
 
-```typescript
-// packages/my-module/sapi/src/index.ts
-import { db } from "@sfmc/sdk/sapi/db";
-import { ModuleRegistry } from "@sfmc/sdk/module-loader";
-import { Permission } from "@sfmc/sdk/sapi/runtime";
+## 自动化维护
 
-ModuleRegistry.register({
-  id: "feature-my-module",
-  afterWorldLoad: false,
-  lifecycle: {
-    registerPermissions() {
-      Permission.register("my_module.use", Permission.Any);
-    },
-    async init() {
-      await db.defineTable("my_table", {
-        id: { type: "text", primary: true },
-        created_at: { type: "integer", notNull: true },
-      });
-    },
-    cleanup() {},
-  },
-});
-```
+面向 main 的 PR 运行离线规则校验、工具回归测试和构建；不要求贡献者手改聚合文件。main 上分片、Schema、工具、依赖或发布工作流变化后，串行发布任务从最新 main 构建，只提交变化的 `index.json`。推送遇到竞争会最多重新构建三次，无强制推送；索引提交不匹配路径触发条件，不会形成循环。也可在 main 手动运行 Publish registry index。
 
-## 开发工作流
+维护者需允许 Actions 写入仓库，并确保主分支规则允许该机器人提交；若分支规则禁止直接推送，发布任务会失败，须先调整机器人权限或改用符合规则的发布流程。实现参考 [GitHub Actions 并发控制](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)。
 
-```bash
-# 同级放置主仓与本仓后：
-cd ../ScriptsForMinecraftServer && npm install && npm run sdk:build
-cd ../sfmc-modules && npm install && npm run typecheck
-
-# 联调：把模块 dir 安装进主仓再打 BP
-cd ../ScriptsForMinecraftServer
-node tools/fetch-module.mjs install land --from dir:../sfmc-modules/packages/land
-sfmc behavior-pack build && sfmc behavior-pack deploy
-```
-
-详见 [CONTRIBUTING.md](./CONTRIBUTING.md#本地依赖怎么装推荐)。
-
-## 分发
-
-发布时会生成每个模块的压缩包：
-
-```
-sfmc-module-<id>-<X.Y.Z>.zip
-sfmc-module-<id>-<X.Y.Z>.zip.sha256
-```
-
-`tools/check-modules.js` 会校验所有 `packages/*/sapi/manifest.json` 是否符合 v2 规范，并且 `index.json` 目录镜像与磁盘上的实际模块保持一致。
-
-## CI
-
-GitHub Actions 运行：
-
-1. `tools/check-modules.js` — 检查 manifest v2 的合理性
-2. `tools/build.js` — 对每个模块的 `sapi/src/index.ts` 执行 esbuild，验证无编译错误
-3. 在 tag 推送时发布压缩包制品
-
-## 从主仓库迁移
-
-[ScriptsForMinecraftServer](https://github.com/Shiroha7z/ScriptsForMinecraftServer) 中的 `modules/packages/<id>/` 目录通过 `git subtree push` 迁移到此仓库：
-
-```bash
-cd ../ScriptsForMinecraftServer
-git subtree push --prefix=modules/packages \
-  git@github.com:Shiroha7z/sfmc-modules.git main
-```
-
-推送后，模块在此仓库中位于 `packages/<id>/` 下。主仓库的 `modules/catalog.json` 会更新为从此仓库获取 `index.json`，例如：
-
-```bash
-sfmc module install <id> --from github:Shiroha7z/sfmc-modules@latest
-```
-
-## 许可证
-
-ISC
+本仓库保留现有 [AGPL-3.0-only 许可证](LICENSE)；各模块的许可证以清单及模块自身许可证为准。

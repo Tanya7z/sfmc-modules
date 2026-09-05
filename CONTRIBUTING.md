@@ -1,158 +1,87 @@
-# Contributing / 贡献指南
+# 贡献指南
 
-Welcome to **sfmc-modules**.  
-欢迎来到 **sfmc-modules**。
+本仓库接受 SFMC 官方与第三方模块的元数据收录。业务实现、构建与 npm 发布都在模块作者自己的仓库中完成。
 
-This repository holds first-party SFMC v2 modules. Each module is a small self-contained SAPI-side package.  
-此仓库包含 SFMC v2 的第一方模块。每个模块都是独立的 SAPI 端包。
+## 1. 先发布模块
 
----
+1. 准备符合 SFMC 模块契约的 npm 包，在独立仓中完成测试和打包。
+2. 先将所收录的精确版本公开发布到 `registry.npmjs.org`。Scoped 包首次发布时通常使用 `npm publish --access public`。
+3. 检查发布结果，例如 `npm view @your-scope/module-example@1.0.0 name version --registry=https://registry.npmjs.org`。
+4. 核实许可证、SDK 兼容范围、模块 ID 和真实依赖，不要使用本地 `file:`、workspace 路径、未发布版本或 npm dist-tag 代替版本号。
 
-## 本地依赖怎么装（推荐）
+初始化的 19 个官方模块在 2026-09-05 的公共源检查中均返回 404；其本地元数据已经收录，公共发布仍待完成。这是迁移状态说明，第三方新增收录仍须先完成公开发布。
 
-`sfmc-modules` **不是**完整运行时仓：真正的 SDK / BDS / BP 构建都在旁路的
-[ScriptsForMinecraftServer](https://github.com/Shiroha7z/ScriptsForMinecraftServer)。
-因此本仓的 `npm install` 只解决两件事：TypeScript + `@minecraft/*` 类型，以及把主仓 SDK 链到 `node_modules`。
+## 2. 创建一个分片
 
-期望目录（同级）：
+选择未被占用的 kebab-case ID，例如 `example-module`。在 `modules/example-module.json` 中创建一个 JSON 对象。下面是模板，提交前替换所有示例信息为已发布包的真实信息：
 
-```txt
-MCBEProjects/
-  ScriptsForMinecraftServer/   ← 平台 + @sfmc-bds/sdk
-  sfmc-modules/                ← 本仓
+```json
+{
+  "id": "example-module",
+  "name": "示例模块",
+  "description": "简明说明该模块对服主提供的能力",
+  "version": "1.0.0",
+  "npm": "@your-scope/module-example",
+  "sdk": ">=0.2.0",
+  "license": "MIT",
+  "official": false,
+  "repo": "https://github.com/your-account/example-module",
+  "category": "utility",
+  "tags": ["example"],
+  "requires": [],
+  "authors": ["你的公开署名"]
+}
 ```
+
+第三方模块必须填写 `official: false`；只有平台维护者确认的官方模块才能标记为 `true`。这一身份需要人工审查，Schema 的 boolean 校验不代表官方认证。
+
+## 3. Schema 与规则
+
+权威规范为 [单模块 Schema](schemas/registry-module.schema.json) 和 [聚合 Schema](schemas/registry-index.schema.json)。两个对象均禁止未知字段（`additionalProperties: false`）；不要在模块 JSON 中添加 `$schema`，编辑器通过 `.vscode/settings.json` 自动关联规范。
+
+| 字段 | 必填 | 规则 |
+| --- | --- | --- |
+| `id` | 是 | `^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`，文件名严格等于 `<id>.json` |
+| `name` | 是 | 非空、不能只有空白的展示名称 |
+| `description` | 是 | 非空的真实功能说明 |
+| `version` | 是 | 严格 SemVer，支持 prerelease/build metadata，例如 `1.0.0-beta.1`；不接受 `v1.0.0`、`latest` 或范围 |
+| `npm` | 是 | 合法包名，支持 `@scope/name`；最大 214 字符，无 URL、版本后缀或本地路径 |
+| `sdk` | 是 | 非空的 npm semver 范围，例如 `>=0.2.0`、`^0.2.0`；工具向 Ajv 注册 `semver-range` 格式 |
+| `license` | 是 | 非空字符串，填写与模块一致的 SPDX 标识或表达式；真实性由维护者核对 |
+| `official` | 是 | boolean；第三方填写 `false` |
+| `repo` | 否 | 模块的真实源码仓地址，无法核实时省略 |
+| `category` | 否 | `gameplay`、`utility`、`system`、`economy`、`social` 之一 |
+| `tags` | 否 | 不重复的非空字符串数组 |
+| `requires` | 否 | 不重复的模块 ID 数组；须已收录或随同一个 PR 收录，不能依赖自身或形成环 |
+| `authors` | 否 | 非空、不重复的字符串数组，填写公开署名 |
+
+`requires` 表示模块间依赖，不是 npm 依赖或 SDK 内部功能名。无依赖时使用 `[]` 或省略。`modules/` 只存放平铺的 `<id>.json` 常规文件，不放子目录、链接、说明文件或构建产物。重复 ID、错误文件名、空注册表、未知依赖和循环依赖均会使门禁失败。
+
+## 4. 本地验证与提交 PR
+
+使用 Node.js >= 22.13.0，在仓库根目录运行：
 
 ```bash
-# 1) 主仓先装好并构建 SDK
-cd ../ScriptsForMinecraftServer
-npm install
-npm run sdk:build
-
-# 2) 本仓安装
-cd ../sfmc-modules
-npm install
-# postinstall 会自动 junction:
-#   node_modules/@sfmc-bds/sdk  → 主仓 modules/sdk/@sfmc-sdk
-#   node_modules/@sfmc/sdk      → 同上（兼容旧 import 路径）
-
-# 3) 类型检查
-npm run typecheck
-npm run check
+npm ci
+npm run verify
+npm run verify -- --network
+npm test
 ```
 
-若两仓不在同级，设置系统变量：
+`npm install` 也可安装工具；CI 使用锁文件驱动的 `npm ci` 保证一致性。`npm test` 按标准脚本调用 `npm run verify`。
 
-```bash
-# PowerShell
-$env:SFMC_PLATFORM_ROOT = "D:\#WorkPlace\#MCBEProjects\ScriptsForMinecraftServer"
-npm install
-```
+默认校验离线执行，检查每个分片、文件名、ID 唯一性、依赖及待生成索引的 Schema。`--network` 检查全部清单对应的精确 npm 版本，验证响应的包名与版本；404、超时、服务端错误、非法响应或包名/版本不符均返回非零退出码。请求固定发送到公共 npm 源，最多并发 4 个，每个超时 15 秒。
 
-### 在主仓里联调
+向 `main` 提交 PR：通常只添加或更新你自己的 `modules/<id>.json`。PR 说明提供模块源码地址、npm 包和版本、许可证、SDK 兼容性及校验结果。更新已有模块同样须先发布新版本，再更新清单。
 
-本仓改完后，用 `dir:` 装进主仓再 build/deploy。开发期推荐 `--link`（Windows junction / POSIX symlink），改本仓立刻反映到主仓，无需反复 copy：
+**不要把生成的 `index.json` 加入常规模块 PR。** 如需本地预览，可运行 `npm run build`，但只暂存自己的分片。验证不会要求现有聚合索引与分片相等，因此多个作者无需争抢同一聚合文件。PR 门禁还运行 `node --test` 和一次实际构建。
 
-```bash
-cd ../ScriptsForMinecraftServer
-# 复制安装（默认）
-node tools/fetch-module.mjs install economy --from dir:../sfmc-modules/packages/economy
-# 链接安装（Phase 0 DX，推荐日常联调）
-node tools/fetch-module.mjs install economy --from dir:../sfmc-modules/packages/economy --link
-# 或一次装多个：--from 指向 packages 父目录
-node tools/fetch-module.mjs install afk economy --from dir:../sfmc-modules/packages --link
-sfmc behavior-pack build
-sfmc behavior-pack deploy
-```
+## 5. 合并后发布与维护
 
-源码里仍可写 `import … from "@sfmc/sdk/…"`（`ensure-sdk-link` 会挂同名别名）；
-`package.json` 依赖请写已发布名 `@sfmc-bds/sdk`（本仓根 `file:` 指到旁路主仓）。
+合并后，Actions 从最新 main 自动生成 `{ "version": 2, "generatedAt": "<ISO-8601>", "modules": { "<id>": { ... } } }`。条目按 ID 排序，完整保留经验证的元数据；现行 CLI 读取其中的 `npm`、`version`、`sdk`，忽略展示字段。
 
----
+构建通过临时文件原子替换索引。分片无变化时保留时间戳；有变化才生成新的时间戳。发布任务串行执行，仅暂存 `index.json`，遇到并发推送会从最新 main 重新构建，最多尝试三次。禁止强制推送。修改 Schema、构建工具或工具依赖也会触发发布。
 
-## Module contract / 模块契约
+维护者应将 **Verify registry PR / verify** 配置为必需检查；允许发布机器人写入 main，并检查分支保护规则。工作流的 `contents: write` 不能覆盖禁止直接推送的规则。首次发布后检查 Actions 日志与根目录索引，必要时在 main 手动运行 **Publish registry index**。当前工作流不会发布 npm 包。
 
-See [README.md](./README.md#module-contract-v2). Every module MUST:  
-参见 [README.md](./README.md#module-contract-v2)。每个模块**必须**：
-
-1. Ship `sapi/manifest.json` with `schemaVersion: 2`.  
-2. Ship `sapi/src/index.ts` calling `ModuleRegistry.register({...})`.  
-3. Declare **all** permissions it needs (`db:read:*`, `db:write:*`, `config:*`, `service:*`).  
-4. Declare **all** cross-module calls via `services.requires` / manifest `requires`.  
-5. Not import other modules' source code (use `service.get` / `tx.call` instead).  
-   跨模块运行时依赖写在 **manifest**；只有真正 `import type` 时才在 `package.json` 加模块依赖。
-
----
-
-## Adding a new module / 添加新模块（Phase 0）
-
-```bash
-# 跨平台（推荐）
-npm run new -- my-mod "我的模块"
-# 等价
-node tools/new-module.mjs my-mod "我的模块"
-# bash 兼容入口仍可用
-./tools/new.sh my-mod "我的模块"
-```
-
-命名约定：
-
-| 层 | 示例 |
-|----|------|
-| 文件夹 / `fetch-module install` | `my-mod`（禁止 `feature-`/`core-` 前缀） |
-| npm (`package.json` name) | `@sfmc-bds/module-my-mod`（与平台同组织） |
-| `manifest.id` | `feature-my-mod`（`--type core` → `core-my-mod`） |
-| `configKey` | `my_mod` |
-
-骨架含 `package.json`（依赖 `@sfmc-bds/sdk`）、`sapi/manifest.json`、`sapi/src/index.ts`、`sapi/tsconfig.json`、`configs-default/<configKey>.json`，并增量写入 `index.json`。
-
-然后在主仓 `--link` 联调（见上）
----
-
-## Releases / 发布
-
-Tag the module with semver. CI publishes zip artifacts and updates `index.json` on `main`.
-
----
-
-## Style / 代码风格
-
-- TypeScript strict (`exactOptionalPropertyTypes: true`)
-- No raw SQL — only `db.tx()` / `db.query()` with `WhereExpr`
-- No direct `fetch()` / `fs` — only `@sfmc/sdk` (alias of `@sfmc-bds/sdk`) capability surface
-
----
-
-## @minecraft/* 版本 / Minecraft API pins
-
-Bedrock Script API 类型与运行时须与主仓 **同一 preview 线** 对齐。权威 pin 在主仓
-`ScriptsForMinecraftServer/package.json` 的 `devDependencies` + `overrides`（当前示例：`1.26.40-preview.30` 线）。
-
-| 包 | 用途 |
-| ---- | ------ |
-| `@minecraft/server` | SAPI 核心 |
-| `@minecraft/server-ui` | 表单 UI |
-| `@minecraft/server-net` | Node 侧 net（主仓 dev） |
-| `@minecraft/vanilla-data` | 原版数据枚举 |
-
-业务模块 **不要** 声明 `@minecraft/*`（dependencies / peerDependencies / devDependencies）。  
-类型来自本仓根 `devDependencies`（与主仓 pin 对齐）。`@sfmc-bds/sdk` 自身可选 peer 可保留 `>=` 最低兼容范围。
-
-校验：
-
-```bash
-npm run check-minecraft-versions
-# 或主仓侧（会顺带扫描同级 sfmc-modules）：
-cd ../ScriptsForMinecraftServer && npm run check-minecraft-versions
-```
-
-升级 preview：先改主仓根 `devDependencies` + `overrides`，再两边根目录 `npm install`，同步本仓根 `devDependencies`，最后跑上述 check。
-
-## Lint
-
-本仓 `npm run lint` 启用 `@sfmc-bds/eslint-plugin`（`file:` 链到主仓 `modules/sdk/@sfmc-eslint-plugin`）。规则说明见该包 README 与主仓 `docs/dev/module-author.md`。
-
----
-
-## License / 许可证
-
-By contributing, you agree your code is licensed under ISC (matching this repo).
+工具变更需额外运行 `node --test`，覆盖非法输入、失败不覆盖原索引、重复构建稳定性与网络错误等场景。Schema 若改变了 CLI 读取字段，必须同时验证现行 CLI 解析器兼容性。

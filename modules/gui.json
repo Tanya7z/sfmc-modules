@@ -1,0 +1,12 @@
+{
+  "id": "gui",
+  "name": "交互导航",
+  "description": "微内核数据驱动 UI 引擎与 MenuNavigator SPA 路由",
+  "version": "0.2.0",
+  "npm": "@sfmc-bds/module-gui",
+  "sdk": ">=0.2.0",
+  "license": "ISC",
+  "official": true,
+  "category": "system",
+  "requires": []
+}

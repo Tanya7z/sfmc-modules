@@ -1,0 +1,15 @@
+{
+  "id": "land",
+  "name": "领地庄园",
+  "description": "现代地产租赁契约（只租不卖）+ 原版三维高亮线框 + 商业门票造血",
+  "version": "0.2.0",
+  "npm": "@sfmc-bds/module-land",
+  "sdk": ">=0.2.0",
+  "license": "ISC",
+  "official": true,
+  "category": "gameplay",
+  "requires": [
+    "economy",
+    "activity-log"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "chat",
+  "name": "聊天管道",
+  "description": "独占原生聊天流管道，提供拦截器与广播/私聊服务",
+  "version": "0.2.0",
+  "npm": "@sfmc-bds/module-chat",
+  "sdk": ">=0.2.0",
+  "license": "ISC",
+  "official": true,
+  "category": "social",
+  "requires": [
+    "economy"
+  ]
+}

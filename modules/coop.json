@@ -1,0 +1,15 @@
+{
+  "id": "coop",
+  "name": "合作社",
+  "description": "合作社组织治理与公账划转托管",
+  "version": "0.2.0",
+  "npm": "@sfmc-bds/module-coop",
+  "sdk": ">=0.2.0",
+  "license": "ISC",
+  "official": true,
+  "category": "social",
+  "requires": [
+    "economy",
+    "activity-log"
+  ]
+}
