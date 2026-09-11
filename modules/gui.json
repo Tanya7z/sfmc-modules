@@ -1,8 +1,8 @@
 {
   "id": "gui",
-  "name": "交互导航",
-  "description": "微内核数据驱动 UI 引擎与 MenuNavigator SPA 路由",
-  "version": "0.2.0",
+  "name": "声明式界面运行时",
+  "description": "注册、解释并打开模块自带的 JSON 页面，不再内置主菜单",
+  "version": "0.2.1",
   "npm": "@sfmc-bds/module-gui",
   "sdk": ">=0.2.0",
   "license": "ISC",
