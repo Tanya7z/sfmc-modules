@@ -37,7 +37,6 @@ CLI 从 [main/index.json](https://raw.githubusercontent.com/Tanya7z/sfmc-modules
 | [economy](modules/economy.json) | 经济系统 | economy | 计分板权威余额 + DB 流水留档 + 两阶段转账中枢 | — |
 | [fly-area](modules/fly-area.json) | 区域飞行 | gameplay | 空间进出自动飞行能力赋权与剥离缓降 | area |
 | [gamemode-area](modules/gamemode-area.json) | 区域游戏模式 | gameplay | 区域游戏模式切换与背包隔离置换 | area, inventory-switcher |
-| [gui](modules/gui.json) | 交互导航 | system | 微内核数据驱动 UI 引擎与 MenuNavigator SPA 路由 | — |
 | [inventory-switcher](modules/inventory-switcher.json) | 背包切换 | system | 通用背包多槽位快照持久化与原子置换服务 | — |
 | [land](modules/land.json) | 领地庄园 | gameplay | 现代地产租赁契约（只租不卖）+ 原版三维高亮线框 + 商业门票造血 | economy, activity-log |
 | [monitor](modules/monitor.json) | 运行时监控 | system | TPS 逐刻采样环与全服综合负载宏观时序监控 | — |

@@ -8,5 +8,5 @@
   "license": "ISC",
   "official": true,
   "category": "utility",
-  "requires": ["gui"]
+  "requires": []
 }

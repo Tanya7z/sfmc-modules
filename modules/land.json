@@ -8,5 +8,5 @@
   "license": "ISC",
   "official": true,
   "category": "gameplay",
-  "requires": ["economy", "activity-log", "gui"]
+  "requires": ["economy", "activity-log"]
 }

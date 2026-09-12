@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generatedAt": "2026-09-11T17:52:59.352Z",
+  "generatedAt": "2026-09-12T18:16:57.986Z",
   "modules": {
     "activity-log": {
       "id": "activity-log",
@@ -48,9 +48,7 @@
       "license": "ISC",
       "official": true,
       "category": "social",
-      "requires": [
-        "gui"
-      ]
+      "requires": []
     },
     "chat-sounds": {
       "id": "chat-sounds",
@@ -92,8 +90,7 @@
       "category": "social",
       "requires": [
         "economy",
-        "activity-log",
-        "gui"
+        "activity-log"
       ]
     },
     "data-backup": {
@@ -149,18 +146,6 @@
         "inventory-switcher"
       ]
     },
-    "gui": {
-      "id": "gui",
-      "name": "声明式界面运行时",
-      "description": "注册、解释并打开模块自带的 JSON 页面，不再内置主菜单",
-      "version": "0.2.1",
-      "npm": "@sfmc-bds/module-gui",
-      "sdk": ">=0.2.0",
-      "license": "ISC",
-      "official": true,
-      "category": "system",
-      "requires": []
-    },
     "inventory-switcher": {
       "id": "inventory-switcher",
       "name": "背包切换",
@@ -185,8 +170,7 @@
       "category": "gameplay",
       "requires": [
         "economy",
-        "activity-log",
-        "gui"
+        "activity-log"
       ]
     },
     "monitor": {
@@ -211,9 +195,7 @@
       "license": "ISC",
       "official": true,
       "category": "utility",
-      "requires": [
-        "gui"
-      ]
+      "requires": []
     },
     "peace-area": {
       "id": "peace-area",
@@ -232,7 +214,7 @@
     "qa": {
       "id": "qa",
       "name": "知识竞答",
-      "description": "知识竞答加权出题、聊天快捷作答与经济奖惩结算",
+      "description": "知识竞答加权出题、聊天快捷作答与经济奖惩结算，附声明式 UI 控件验收目录",
       "version": "0.2.0",
       "npm": "@sfmc-bds/module-qa",
       "sdk": ">=0.2.0",
